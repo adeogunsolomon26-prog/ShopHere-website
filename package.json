@@ -1,0 +1,29 @@
+{
+  "name": "shophere_website",
+  "version": "1.0.0",
+  "description": "ShopHere E-Commerce & Inventory Management System with RBAC",
+  "main": "server.js",
+  "scripts": {
+    "setup": "node 01_schema_setup.js",
+    "seed": "node 02_seed_data.js",
+    "users": "node 05_users_setup.js",
+    "init-db": "node 01_schema_setup.js && node 02_seed_data.js",
+    "init-all": "node 01_schema_setup.js && node 02_seed_data.js && node 05_users_setup.js",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "rbac": "node 04_rbac_setup.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.6",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.7.0",
+    "mongoose": "^9.11.0"
+  }
+}

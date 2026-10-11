@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ShopHere Proof of Work — Live verification console for MongoDB Atlas Schema Validation, RBAC Enforcement, and Automated Stock Triggers.">
+  <title>ShopHere — Technical Verification Laboratory</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans antialiased selection:bg-blue-600 selection:text-white">
+
+  <!-- Global Navbar Component Container -->
+  <div id="global-navbar"></div>
+
+  <!-- Main Content Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Page Header & IA Breadcrumbs -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div>
+        <div class="flex items-center space-x-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <span>Technical Testing Laboratory</span>
+          <span>•</span>
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-medium">Diagnostic Console</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-1">
+          Proof of Work & Database Diagnostics
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-600 mt-1">
+          Live verification tests for MongoDB Atlas $jsonSchema validation rejections, RBAC 403 access gates, query explain stats, and stock triggers.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="ShopHereTour.showTourSelector()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium border border-slate-300 transition shadow-xs">
+          <span>🎓 Explore Tours</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Diagnostic Grid (4 Core Verification Test Panels) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+      <!-- TEST 1: $jsonSchema Validation Live Tester -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-2.5 border-b border-slate-200">
+            <div class="flex items-center space-x-2">
+              <span class="text-base">🧪</span>
+              <h2 class="text-sm font-bold text-slate-900">1. $jsonSchema Strict Validation Test</h2>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+              Atlas Rules
+            </span>
+          </div>
+          <p class="text-xs text-slate-600 mt-2.5 leading-relaxed">
+            Test strict schema validation by sending invalid data to MongoDB Atlas. Choose a scenario and see the database immediately reject non-compliant documents.
+          </p>
+
+          <div class="mt-3.5 space-y-2.5">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Target Collection & Test Case</label>
+              <select id="schema-test-scenario" onchange="updateSchemaPayload()" class="w-full px-2.5 py-1.5 rounded-md bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-blue-600">
+                <option value="categories-invalid">❌ categories — Invalid enum: "Electronics" (only Household, Sports, Accessories, Clothing)</option>
+                <option value="suppliers-invalid-phone">❌ suppliers — Invalid phone regex: "123-456" (needs NN-NNN-NNNN-NNN-NNN)</option>
+                <option value="items-invalid-price">❌ items — Negative unitPrice: -5.00 (min 0.01)</option>
+                <option value="items-invalid-stock">❌ items — quantityInHand: 0 (min 1 int)</option>
+                <option value="orders-invalid-status">❌ orders — Invalid status: "Pending" (only InTransit, Received, Cancelled)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">JSON Payload to Insert</label>
+              <textarea id="schema-payload-editor" rows="4" class="w-full p-2.5 rounded-md bg-slate-900 border border-slate-700 font-mono text-xs text-emerald-400 focus:outline-none focus:border-blue-500 leading-relaxed"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-200">
+          <button onclick="runSchemaValidationTest()" id="btn-schema-test" class="w-full py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-xs">
+            ⚡ Execute Insert Test on MongoDB Atlas
+          </button>
+          <pre id="schema-test-result" class="hidden mt-2.5 p-3 rounded-md bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-100 overflow-x-auto leading-relaxed"></pre>
+        </div>
+      </section>
+
+      <!-- TEST 2: RBAC 403 Permission Enforcement Tester -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-2.5 border-b border-slate-200">
+            <div class="flex items-center space-x-2">
+              <span class="text-base">🛡️</span>
+              <h2 class="text-sm font-bold text-slate-900">2. RBAC Authorization 403 Access Gate</h2>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              Access Gates
+            </span>
+          </div>
+          <p class="text-xs text-slate-600 mt-2.5 leading-relaxed">
+            Verify that roles lacking required privileges are rejected with strict <code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">403 Forbidden</code> status codes.
+          </p>
+
+          <div class="mt-3.5 space-y-2.5">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Role Under Test</label>
+              <select id="rbac-test-role" class="w-full px-2.5 py-1.5 rounded-md bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-blue-600">
+                <option value="consumer">Consumer (Public Shopper — readOnly)</option>
+                <option value="staff">Staff (Inventory Manager — readWrite)</option>
+                <option value="superadmin">Super Admin (Iyiola — dbOwner)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Target Permission</label>
+              <select id="rbac-test-permission" class="w-full px-2.5 py-1.5 rounded-md bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-blue-600">
+                <option value="manage_users">manage_users (Exclusive to Iyiola)</option>
+                <option value="run_backup">run_backup (Exclusive to Iyiola)</option>
+                <option value="update_stock">update_stock (Staff & Super Admin)</option>
+                <option value="view_orders">view_orders (Staff & Super Admin)</option>
+                <option value="view_items">view_items (Public Consumer, Staff, Admin)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-200">
+          <button onclick="runRBACTest()" id="btn-rbac-test" class="w-full py-2 px-3 rounded-md bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs transition shadow-xs">
+            🔍 Check RBAC Authorization Status
+          </button>
+          <pre id="rbac-test-result" class="hidden mt-2.5 p-3 rounded-md bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-100 overflow-x-auto leading-relaxed"></pre>
+        </div>
+      </section>
+
+      <!-- TEST 3: Automated Stock Replenishment & Reorder Trigger -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-2.5 border-b border-slate-200">
+            <div class="flex items-center space-x-2">
+              <span class="text-base">⚡</span>
+              <h2 class="text-sm font-bold text-slate-900">3. Automated Stock Trigger Pipeline</h2>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+              Trigger Execution
+            </span>
+          </div>
+          <p class="text-xs text-slate-600 mt-2.5 leading-relaxed">
+            Locates an InTransit order and changes status to Received. Executes the atomic stock update trigger and checks reorder alerts.
+          </p>
+
+          <div class="mt-3.5 p-3 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
+            <div class="font-bold text-slate-900">Workflow Sequence:</div>
+            <div>1. Locate existing InTransit order</div>
+            <div>2. Atomically update orderStatus to "Received" with receivingDate</div>
+            <div>3. Increment item.quantityInHand by quantityReceived</div>
+            <div>4. Evaluate: if quantityInHand ≤ reorderLevel, insert reorderAlert</div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-200">
+          <button onclick="runTriggerDemo()" id="btn-trigger-test" class="w-full py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-xs">
+            🚀 Run Live Trigger Execution Pipeline
+          </button>
+          <pre id="trigger-test-result" class="hidden mt-2.5 p-3 rounded-md bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-100 overflow-x-auto leading-relaxed max-h-52"></pre>
+        </div>
+      </section>
+
+      <!-- TEST 4: Index Performance & Explain Plan -->
+      <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-2.5 border-b border-slate-200">
+            <div class="flex items-center space-x-2">
+              <span class="text-base">📈</span>
+              <h2 class="text-sm font-bold text-slate-900">4. Index Explain Plan (Performance)</h2>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              Query Planner
+            </span>
+          </div>
+          <p class="text-xs text-slate-600 mt-2.5 leading-relaxed">
+            Inspects the MongoDB Atlas query planner via <code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">.explain("executionStats")</code> to verify compound index usage.
+          </p>
+
+          <div class="mt-3.5 p-3 rounded-md bg-slate-50 border border-slate-200 text-xs font-mono text-slate-700">
+            Query: db.items.find({ categoryId: { $exists: true } }).explain("executionStats")
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-200">
+          <button onclick="runExplainTest()" id="btn-explain-test" class="w-full py-2 px-3 rounded-md bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs transition shadow-xs">
+            🔍 Execute Query Explain on Atlas
+          </button>
+          <pre id="explain-test-result" class="hidden mt-2.5 p-3 rounded-md bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-100 overflow-x-auto leading-relaxed max-h-52"></pre>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Shared Scripts -->
+  <script src="/tour-system.js"></script>
+  <script src="/auth-system.js"></script>
+
+  <!-- Proof Page Logic -->
+  <script>
+    const scenarios = {
+      "categories-invalid": {
+        col: "categories",
+        doc: { categoryName: "Electronics" }
+      },
+      "suppliers-invalid-phone": {
+        col: "suppliers",
+        doc: { supplierName: "Invalid Phone Co", phone: "123-456", email: "invalid@supplier.com" }
+      },
+      "items-invalid-price": {
+        col: "items",
+        doc: { itemName: "Bad Price Item", unitPrice: -5.0, quantityInHand: 10, reorderLevel: 5, reorderQuantity: 10 }
+      },
+      "items-invalid-stock": {
+        col: "items",
+        doc: { itemName: "Zero Stock Item", unitPrice: 15.0, quantityInHand: 0, reorderLevel: 5, reorderQuantity: 10 }
+      },
+      "orders-invalid-status": {
+        col: "orders",
+        doc: { quantityOrdered: 5, orderStatus: "Pending" }
+      }
+    };
+
+    function updateSchemaPayload() {
+      const val = document.getElementById("schema-test-scenario").value;
+      const s = scenarios[val];
+      document.getElementById("schema-payload-editor").value = JSON.stringify(s.doc, null, 2);
+    }
+
+    async function runSchemaValidationTest() {
+      const btn = document.getElementById("btn-schema-test");
+      const out = document.getElementById("schema-test-result");
+      const val = document.getElementById("schema-test-scenario").value;
+      const col = scenarios[val].col;
+      let payload;
+      try {
+        payload = JSON.parse(document.getElementById("schema-payload-editor").value);
+      } catch (e) {
+        alert("Invalid JSON in editor");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Validating on Atlas...";
+      out.classList.remove("hidden");
+
+      try {
+        const res = await fetch(`/api/proof/validate-insert/${col}`, {
+          method: "POST",
+          headers: ShopHereAuth.getHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          out.className = "mt-2.5 p-3 rounded-md bg-slate-900 border border-emerald-500 text-emerald-400 font-mono text-[11px] overflow-x-auto";
+          out.textContent = `[PASSED VALIDATION]\n` + JSON.stringify(data, null, 2);
+        } else {
+          out.className = "mt-2.5 p-3 rounded-md bg-slate-900 border border-rose-500 text-rose-400 font-mono text-[11px] overflow-x-auto";
+          out.textContent = `[REJECTED BY ATLAS $jsonSchema VALIDATOR]\nStatus: 400 Bad Request\nError: ${data.error}\nCodeName: ${data.codeName || 'DocumentValidationFailure'}`;
+        }
+      } catch (err) {
+        out.className = "mt-2.5 p-3 rounded-md bg-slate-900 border border-rose-500 text-rose-400 font-mono text-[11px] overflow-x-auto";
+        out.textContent = `[ERROR]: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "⚡ Execute Insert Test on MongoDB Atlas";
+      }
+    }
+
+    async function runRBACTest() {
+      const role = document.getElementById("rbac-test-role").value;
+      const perm = document.getElementById("rbac-test-permission").value;
+      const out = document.getElementById("rbac-test-result");
+
+      out.classList.remove("hidden");
+      try {
+        const res = await fetch("/api/proof/test-permission", {
+          method: "POST",
+          headers: ShopHereAuth.getHeaders(),
+          body: JSON.stringify({ testRole: role, testPermission: perm })
+        });
+        const data = await res.json();
+        if (data.allowed) {
+          out.className = "mt-2.5 p-3 rounded-md bg-slate-900 border border-emerald-500 text-emerald-400 font-mono text-[11px] overflow-x-auto";
+          out.textContent = `[AUTHORIZATION SUCCESSFUL]\nRole: ${data.label} (${data.role})\nPermission: ${data.permission}\nResult: 200 OK — Allowed`;
+        } else {
+          out.className = "mt-2.5 p-3 rounded-md bg-slate-900 border border-rose-500 text-rose-400 font-mono text-[11px] overflow-x-auto";
+          out.textContent = `[AUTHORIZATION DENIED]\nRole: ${data.label} (${data.role})\nPermission: ${data.permission}\nResult: 403 Forbidden — Access Gate Denied`;
+        }
+      } catch (e) {
+        out.textContent = "Error: " + e.message;
+      }
+    }
+
+    async function runTriggerDemo() {
+      const btn = document.getElementById("btn-trigger-test");
+      const out = document.getElementById("trigger-test-result");
+      btn.disabled = true;
+      btn.textContent = "Executing Trigger...";
+      out.classList.remove("hidden");
+
+      try {
+        const res = await fetch("/api/proof/trigger-demo", {
+          method: "POST",
+          headers: ShopHereAuth.getHeaders()
+        });
+        const data = await res.json();
+        out.className = "mt-2.5 p-3 rounded-md bg-slate-900 border border-blue-500 text-blue-300 font-mono text-[11px] overflow-x-auto";
+        out.textContent = `[TRIGGER EXECUTION RESULT]\n` + JSON.stringify(data, null, 2);
+      } catch (e) {
+        out.textContent = "Trigger Error: " + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "🚀 Run Live Trigger Execution Pipeline";
+      }
+    }
+
+    async function runExplainTest() {
+      const btn = document.getElementById("btn-explain-test");
+      const out = document.getElementById("explain-test-result");
+      btn.disabled = true;
+      btn.textContent = "Fetching Explain...";
+      out.classList.remove("hidden");
+
+      try {
+        const res = await fetch("/api/proof/explain", {
+          method: "POST",
+          headers: ShopHereAuth.getHeaders(),
+          body: JSON.stringify({ collection: "items", query: { categoryId: { $exists: true } } })
+        });
+        const data = await res.json();
+        out.className = "mt-2.5 p-3 rounded-md bg-slate-900 border border-emerald-500 text-emerald-300 font-mono text-[11px] overflow-x-auto max-h-56";
+        out.textContent = `[INDEX EXPLAIN STATS]\n` + JSON.stringify(data.executionStats || data.queryPlanner || data, null, 2);
+      } catch (e) {
+        out.textContent = "Explain Error: " + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "🔍 Execute Query Explain on Atlas";
+      }
+    }
+
+    // INIT
+    ShopHereAuth.renderGlobalNavbar("proof");
+    ShopHereAuth.onAuthChange(() => ShopHereAuth.renderGlobalNavbar("proof"));
+    updateSchemaPayload();
+  </script>
+</body>
+</html>

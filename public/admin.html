@@ -1,0 +1,2479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ShopHere Staff & Operations Control Desk — Inventory Monitoring, Order Fulfillment, Trigger Automation, and Analytics.">
+  <title>ShopHere — Retail Operations Desk</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN for Atlas Data Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans antialiased selection:bg-blue-600 selection:text-white">
+
+  <!-- Global Navbar Component Container -->
+  <div id="global-navbar"></div>
+
+  <!-- Main Content Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ACCESS DENIED STATE (Shown for consumer/guest shoppers) -->
+    <div id="access-denied-box" class="hidden my-12 text-center max-w-md mx-auto p-6 rounded-lg bg-white border border-amber-300 shadow-sm">
+      <div class="w-12 h-12 mx-auto mb-3 rounded-md bg-amber-50 border border-amber-200 flex items-center justify-center text-2xl">
+        🛡️
+      </div>
+      <h2 class="text-lg font-bold text-slate-900 tracking-tight">Staff Clearance Required</h2>
+      <p class="mt-1.5 text-xs text-slate-600 leading-relaxed">
+        The Operations Desk is reserved for <strong class="text-slate-900 font-semibold">Staff (readWrite)</strong> and <strong class="text-slate-900 font-semibold">Super Admins (dbOwner)</strong>. 
+        Guest shoppers are restricted to public storefront browsing.
+      </p>
+      <div class="mt-4 flex flex-wrap gap-2 justify-center">
+        <button onclick="ShopHereAuth.setRole('staff', 'Tomiwa')" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-blue-600 hover:bg-blue-700 text-white transition shadow-xs">
+          👤 Switch to Staff (Tomiwa)
+        </button>
+        <button onclick="ShopHereAuth.setRole('superadmin', 'Iyiola')" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition shadow-xs">
+          👑 Switch to Iyiola
+        </button>
+        <button onclick="ShopHereAuth.showLoginModal()" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition shadow-xs">
+          🔐 Password Sign In
+        </button>
+      </div>
+    </div>
+
+    <!-- AUTHORIZED ADMIN CONTENT -->
+    <div id="admin-content" class="space-y-5">
+
+      <!-- Header & Information Architecture -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+          <div class="flex items-center space-x-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <span>Operations & Inventory Control</span>
+            <span>•</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-medium">readWrite Tier</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-1">
+            Retail Operations Desk
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-600 mt-1">
+            Live stock health, incoming shipment fulfillment, automatic replenishment triggers, and directory records.
+          </p>
+        </div>
+
+        <!-- Role Onboarding Guides -->
+        <div class="flex items-center gap-2">
+          <button onclick="ShopHereTour.startTour('staff')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium border border-slate-300 transition shadow-xs">
+            <span>👔</span>
+            <span>Staff Guide</span>
+          </button>
+          <button onclick="ShopHereTour.showTourSelector()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium border border-slate-300 transition shadow-xs">
+            <span>🎓 All Tours</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Compact Summary Strip (What Needs Attention Right Now) -->
+      <div class="bg-white border border-slate-200 rounded-lg grid grid-cols-2 md:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 shadow-xs">
+        <div class="p-3.5 flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-lg">📦</div>
+          <div>
+            <div class="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">Catalog Items</div>
+            <div id="stat-items-count" class="text-base font-bold text-slate-900">--</div>
+          </div>
+        </div>
+        <div class="p-3.5 flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-md bg-amber-50 border border-amber-200 flex items-center justify-center text-lg">🚚</div>
+          <div>
+            <div class="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">In-Transit Orders</div>
+            <div id="stat-intransit-count" class="text-base font-bold text-amber-800">--</div>
+          </div>
+        </div>
+        <div class="p-3.5 flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-md bg-rose-50 border border-rose-200 flex items-center justify-center text-lg">⚠️</div>
+          <div>
+            <div class="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">Reorder Alerts</div>
+            <div id="stat-alerts-count" class="text-base font-bold text-rose-800">--</div>
+          </div>
+        </div>
+        <div class="p-3.5 flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-center text-lg">💰</div>
+          <div>
+            <div class="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">Received Value</div>
+            <div id="stat-total-value" class="text-base font-bold text-emerald-800 font-mono">--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Application Navigation: Operations | Reference | Insights -->
+      <div class="bg-white border border-slate-200 rounded-lg p-1.5 flex flex-wrap items-center gap-1 text-xs font-medium shadow-xs">
+        <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-400 px-2 py-1">Operations:</span>
+        <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn px-3 py-1.5 rounded-md font-semibold transition bg-blue-600 text-white shadow-xs">
+          📋 Inventory & Stock
+        </button>
+        <button onclick="switchTab('orders')" id="tab-orders" class="tab-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          📦 Orders & Fulfillment
+        </button>
+        <button onclick="switchTab('alerts')" id="tab-alerts" class="tab-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5">
+          <span>🔔 Reorder Alerts</span>
+          <span id="tab-alerts-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 hidden">0</span>
+        </button>
+
+        <span class="text-slate-300 mx-1">|</span>
+        <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-400 px-2 py-1">Reference:</span>
+        <button onclick="switchTab('directory')" id="tab-directory" class="tab-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          📇 Directory
+        </button>
+
+        <span class="text-slate-300 mx-1">|</span>
+        <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-400 px-2 py-1">Insights & Tools:</span>
+        <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          📊 Atlas Visualizations
+        </button>
+        <button onclick="switchTab('queries')" id="tab-queries" class="tab-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          💻 mongosh Query Studio
+        </button>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════
+           PANEL 1: INVENTORY MANAGEMENT
+           ═══════════════════════════════════════════════════════ -->
+      <section id="panel-inventory" class="tab-panel space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="relative flex-grow max-w-sm">
+            <input type="text" id="inventory-search" oninput="filterInventory()" placeholder="Filter inventory by item name..." class="w-full pl-8 pr-3 py-1.5 rounded-md bg-white border border-slate-300 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition">
+            <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="loadInventory()" class="px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-medium transition shadow-xs" title="Refresh Stock">
+              🔄 Refresh Stock
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg overflow-x-auto shadow-xs">
+          <table class="w-full text-left text-xs text-slate-700">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+              <tr>
+                <th class="py-2.5 px-3.5">Item Name</th>
+                <th class="py-2.5 px-3.5">Category</th>
+                <th class="py-2.5 px-3.5">Supplier</th>
+                <th class="py-2.5 px-3.5">Stock Health</th>
+                <th class="py-2.5 px-3.5">Current Qty</th>
+                <th class="py-2.5 px-3.5">Reorder Level</th>
+                <th class="py-2.5 px-3.5">Reorder Qty</th>
+                <th class="py-2.5 px-3.5">Unit Price (₦)</th>
+                <th class="py-2.5 px-3.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-table-body" class="divide-y divide-slate-200">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════
+           PANEL 2: PURCHASE ORDERS & TRIGGER SIMULATION
+           ═══════════════════════════════════════════════════════ -->
+      <section id="panel-orders" class="tab-panel hidden space-y-3">
+        <div class="p-3 rounded-md bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="text-sm">⚡</span>
+            <span><strong>Stock Replenishment Trigger:</strong> Marking an In-Transit shipment as <strong>"Received"</strong> automatically increments physical inventory in hand and evaluates safety reorder margins.</span>
+          </div>
+          <button onclick="loadOrders()" class="text-xs text-blue-700 hover:text-blue-900 font-semibold underline">Refresh</button>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg overflow-x-auto shadow-xs">
+          <table class="w-full text-left text-xs text-slate-700">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+              <tr>
+                <th class="py-2.5 px-3.5">Order ID</th>
+                <th class="py-2.5 px-3.5">Item</th>
+                <th class="py-2.5 px-3.5">Customer / Receiver</th>
+                <th class="py-2.5 px-3.5">Quantity</th>
+                <th class="py-2.5 px-3.5">Status</th>
+                <th class="py-2.5 px-3.5">Order Date</th>
+                <th class="py-2.5 px-3.5">Receiving Date</th>
+                <th class="py-2.5 px-3.5 text-right">Fulfillment Action</th>
+              </tr>
+            </thead>
+            <tbody id="orders-table-body" class="divide-y divide-slate-200">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════
+           PANEL 3: REORDER ALERTS (ACTIONABLE WORK QUEUE)
+           ═══════════════════════════════════════════════════════ -->
+      <section id="panel-alerts" class="tab-panel hidden space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Reorder Work Queue</h3>
+            <p class="text-xs text-slate-500">Items requiring restocking. Generated automatically when stock drops at or below reorder threshold.</p>
+          </div>
+          <button id="btn-clear-alerts" onclick="clearReorderAlerts()" class="px-3 py-1.5 text-xs font-medium rounded-md bg-white hover:bg-slate-50 text-rose-700 border border-slate-300 transition shadow-xs">
+            🗑️ Clear Alerts (Super Admin)
+          </button>
+        </div>
+
+        <div id="alerts-container" class="space-y-2.5">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════
+           PANEL 4: SUPPLIERS & EMPLOYEES DIRECTORY
+           ═══════════════════════════════════════════════════════ -->
+      <section id="panel-directory" class="tab-panel hidden space-y-5">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-slate-900">Verified Suppliers</h3>
+            <span class="text-xs text-slate-500">Logistics & procurement phone contacts</span>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-lg overflow-x-auto shadow-xs">
+            <table class="w-full text-left text-xs text-slate-700">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th class="py-2.5 px-3.5">Supplier Name</th>
+                  <th class="py-2.5 px-3.5">Phone Number (Atlas Regex Verified)</th>
+                  <th class="py-2.5 px-3.5">Email</th>
+                  <th class="py-2.5 px-3.5">Address</th>
+                </tr>
+              </thead>
+              <tbody id="suppliers-table-body" class="divide-y divide-slate-200">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-slate-900">Staff & Employee Roster</h3>
+            <span class="text-xs text-slate-500">Assigned dispatchers and managers</span>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-lg overflow-x-auto shadow-xs">
+            <table class="w-full text-left text-xs text-slate-700">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th class="py-2.5 px-3.5">Employee Name</th>
+                  <th class="py-2.5 px-3.5">Role</th>
+                  <th class="py-2.5 px-3.5">Phone Number</th>
+                  <th class="py-2.5 px-3.5">Email</th>
+                  <th class="py-2.5 px-3.5">Hire Date</th>
+                </tr>
+              </thead>
+              <tbody id="employees-table-body" class="divide-y divide-slate-200">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════
+           PANEL 5: PRACTICAL ANALYTICS
+           ═══════════════════════════════════════════════════════ -->
+      <!-- ═══════════════════════════════════════════════════════
+           PANEL 5: ATLAS DATA VISUALIZATIONS & ANALYTICS
+           ═══════════════════════════════════════════════════════ -->
+      <section id="panel-analytics" class="tab-panel hidden space-y-6">
+        
+        <!-- Studio Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                MongoDB Atlas Aggregation Engine
+              </span>
+            </div>
+            <h2 class="text-lg font-bold text-slate-900 mt-1.5">Atlas Data Visualization Studio</h2>
+            <p class="text-xs text-slate-600">
+              Interactive visualizations and real-time analytics computed directly from MongoDB Atlas aggregation pipelines (<code class="bg-slate-100 px-1 py-0.2 rounded font-mono text-[11px]">$group</code>, <code class="bg-slate-100 px-1 py-0.2 rounded font-mono text-[11px]">$sum</code>, <code class="bg-slate-100 px-1 py-0.2 rounded font-mono text-[11px]">$lookup</code>). All financial metrics are displayed in Nigerian Naira (₦).
+            </p>
+          </div>
+          <div class="flex items-center space-x-2 shrink-0">
+            <button onclick="loadAnalytics()" class="px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-medium transition shadow-xs flex items-center space-x-1.5">
+              <span>🔄</span>
+              <span>Refresh Atlas Data</span>
+            </button>
+            <button onclick="toggleAtlasEmbed()" id="btn-toggle-embed" class="px-3 py-1.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium transition flex items-center space-x-1.5">
+              <span>🌐</span>
+              <span>Atlas Charts Live Embed</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Summary Cards (All in Naira) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="p-3.5 rounded-lg bg-white border border-slate-200 shadow-xs">
+            <div class="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">Fulfilled Sales Revenue</div>
+            <div id="stat-analytics-revenue" class="text-xl font-bold font-mono text-emerald-800 mt-1">₦0.00</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Orders marked Received</div>
+          </div>
+          <div class="p-3.5 rounded-lg bg-white border border-slate-200 shadow-xs">
+            <div class="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">Total Inventory Valuation</div>
+            <div id="stat-analytics-valuation" class="text-xl font-bold font-mono text-blue-800 mt-1">₦0.00</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Asset value across all categories</div>
+          </div>
+          <div class="p-3.5 rounded-lg bg-white border border-slate-200 shadow-xs">
+            <div class="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">Physical Stock Units</div>
+            <div id="stat-analytics-units" class="text-xl font-bold font-mono text-slate-900 mt-1">0 units</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Total units on warehouse shelf</div>
+          </div>
+          <div class="p-3.5 rounded-lg bg-white border border-slate-200 shadow-xs">
+            <div class="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">Active Reorder Alerts</div>
+            <div id="stat-analytics-alerts" class="text-xl font-bold font-mono text-rose-800 mt-1">0 alerts</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Items needing replenishment</div>
+          </div>
+        </div>
+
+        <!-- ══════ MONGODB ATLAS CHARTS LIVE EMBED FRAME ══════ -->
+        <div id="atlas-embed-container" class="hidden p-4 rounded-lg bg-white border border-blue-200 shadow-xs space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200 gap-2">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-bold text-blue-700 uppercase tracking-wider">MongoDB Atlas Charts</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-800">Embedded Analytics SDK</span>
+              </div>
+              <h3 class="text-sm font-bold text-slate-900 mt-0.5">Native Atlas Cloud Charts Studio Frame</h3>
+              <p class="text-xs text-slate-500">Live embedded visualization viewport connected to your MongoDB Atlas Charts project.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <input type="text" id="atlas-embed-url-input" placeholder="Paste custom Atlas Charts iframe/embed URL..." class="px-2.5 py-1 text-xs border border-slate-300 rounded-md w-64 focus:outline-none focus:border-blue-600">
+              <button onclick="updateAtlasEmbedUrl()" class="px-2.5 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition">Load URL</button>
+            </div>
+          </div>
+          
+          <div class="relative w-full h-80 rounded-md bg-slate-50 border border-slate-200 overflow-hidden flex flex-col items-center justify-center text-center p-6">
+            <iframe id="atlas-charts-iframe" class="w-full h-full hidden" frameborder="0"></iframe>
+            <div id="atlas-charts-placeholder" class="max-w-md space-y-2">
+              <div class="w-12 h-12 mx-auto rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-2xl text-blue-600">
+                📊
+              </div>
+              <h4 class="text-sm font-bold text-slate-800">Live Atlas Charts Viewport Ready</h4>
+              <p class="text-xs text-slate-500 leading-relaxed">
+                Connect your hosted MongoDB Atlas Charts dashboard directly inside this frame. In your MongoDB Atlas Cloud Console, navigate to <strong>Charts &gt; Embed Dashboard</strong>, copy the public or authenticated embedding URL, and paste it above to render live.
+              </p>
+              <div class="pt-2 flex justify-center space-x-2">
+                <button onclick="loadSampleAtlasDashboard()" class="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-md transition shadow-xs">
+                  📊 Load Interactive Native Visualizer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════ 4 CORE ATLAS VISUALIZATION CHARTS ══════ -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          
+          <!-- Chart 1: Sales Revenue by Staff (₦) -->
+          <div class="p-4 rounded-lg bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">Fulfilled Sales Revenue by Staff (₦)</h3>
+                <p class="text-[11px] text-slate-500">MongoDB aggregation: Received orders grouped by employee and valued in Naira</p>
+              </div>
+              <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">orders.$group</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="chart-sales-staff"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Inventory Valuation by Category (₦) -->
+          <div class="p-4 rounded-lg bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">Inventory Asset Valuation by Category (₦)</h3>
+                <p class="text-[11px] text-slate-500">MongoDB aggregation: Category stock multiplied by unit price in Naira</p>
+              </div>
+              <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">items.$group</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="chart-category-valuation"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 3: Stock Health Distribution -->
+          <div class="p-4 rounded-lg bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">Warehouse Stock Health Distribution</h3>
+                <p class="text-[11px] text-slate-500">Live inventory categorized by safety threshold margin</p>
+              </div>
+              <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">items.health</span>
+            </div>
+            <div class="h-64 relative flex items-center justify-center">
+              <canvas id="chart-stock-health"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 4: Supplier Volume Allocation -->
+          <div class="p-4 rounded-lg bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">Supplier Stock Unit Allocation</h3>
+                <p class="text-[11px] text-slate-500">MongoDB aggregation: Total physical units distributed across suppliers</p>
+              </div>
+              <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200">suppliers.$lookup</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="chart-supplier-volume"></canvas>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ══════ MONGODB AGGREGATION PIPELINE INSPECTOR ══════ -->
+        <div class="p-4 rounded-lg bg-white border border-slate-200 shadow-xs">
+          <div class="flex items-center justify-between cursor-pointer" onclick="document.getElementById('pipeline-inspector').classList.toggle('hidden')">
+            <div class="flex items-center space-x-2">
+              <span class="text-sm">🔍</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Inspect Atlas Aggregation Pipelines (MongoDB MQL)</h3>
+            </div>
+            <span class="text-xs text-blue-600 font-medium">Click to Toggle Pipeline MQL ▼</span>
+          </div>
+          <div id="pipeline-inspector" class="hidden mt-3 pt-3 border-t border-slate-200 space-y-3 text-xs font-mono text-slate-700">
+            <div class="p-3 bg-slate-50 rounded border border-slate-200 overflow-x-auto">
+              <span class="font-bold text-slate-900">// 1. Sales Revenue by Staff Aggregation Pipeline:</span>
+              <pre class="mt-1 text-[11px] text-slate-600">db.orders.aggregate([
+  { $match: { orderStatus: "Received" } },
+  { $lookup: { from: "employees", localField: "employeeId", foreignField: "_id", as: "employee" } },
+  { $unwind: "$employee" },
+  { $lookup: { from: "items", localField: "itemId", foreignField: "_id", as: "item" } },
+  { $unwind: "$item" },
+  { $group: {
+      _id: { employeeId: "$employeeId", employeeName: { $concat: ["$employee.firstName", " ", "$employee.lastName"] }, month: { $month: "$orderDate" }, year: { $year: "$orderDate" } },
+      totalOrders: { $sum: 1 },
+      totalQuantity: { $sum: "$quantityReceived" },
+      totalValue: { $sum: { $multiply: ["$quantityReceived", "$item.unitPrice"] } }
+  }},
+  { $sort: { "_id.year": -1, "_id.month": -1 } }
+]);</pre>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border border-slate-200 overflow-x-auto">
+              <span class="font-bold text-slate-900">// 2. Category Inventory Valuation Pipeline:</span>
+              <pre class="mt-1 text-[11px] text-slate-600">db.items.aggregate([
+  { $lookup: { from: "categories", localField: "categoryId", foreignField: "_id", as: "category" } },
+  { $unwind: "$category" },
+  { $group: {
+      _id: "$category.categoryName",
+      itemCount: { $sum: 1 },
+      totalStock: { $sum: "$quantityInHand" },
+      totalValuation: { $sum: { $multiply: ["$quantityInHand", "$unitPrice"] } }
+  }},
+  { $sort: { totalValuation: -1 } }
+]);</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════ DETAILED AGGREGATED TABLES ══════ -->
+        <div class="space-y-4">
+          <div>
+            <div class="mb-2">
+              <h3 class="text-sm font-bold text-slate-900">Monthly Fulfilled Sales Breakdown by Staff</h3>
+              <p class="text-xs text-slate-500">Official order records finalized as 'Received' by warehouse personnel.</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg overflow-x-auto shadow-xs">
+              <table class="w-full text-left text-xs text-slate-700">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th class="py-2.5 px-3.5">Employee Name</th>
+                    <th class="py-2.5 px-3.5">Period (MM/YYYY)</th>
+                    <th class="py-2.5 px-3.5">Total Orders</th>
+                    <th class="py-2.5 px-3.5">Units Fulfilled</th>
+                    <th class="py-2.5 px-3.5 font-mono text-right">Total Value (₦)</th>
+                  </tr>
+                </thead>
+                <tbody id="sales-table-body" class="divide-y divide-slate-200">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div class="mb-2">
+              <h3 class="text-sm font-bold text-slate-900">Top Suppliers by Volume</h3>
+              <p class="text-xs text-slate-500">Supplier distribution and active inventory unit count.</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg overflow-x-auto shadow-xs">
+              <table class="w-full text-left text-xs text-slate-700">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th class="py-2.5 px-3.5">Supplier Name</th>
+                    <th class="py-2.5 px-3.5">Contact Phone</th>
+                    <th class="py-2.5 px-3.5">Catalog Items</th>
+                    <th class="py-2.5 px-3.5 text-right">Total Stock (units)</th>
+                  </tr>
+                </thead>
+                <tbody id="top-suppliers-table-body" class="divide-y divide-slate-200">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════
+           PANEL 6: MONGOSH QUERY STUDIO & COMMAND GENERATOR
+           ═══════════════════════════════════════════════════════ -->
+      <section id="panel-queries" class="tab-panel hidden space-y-5">
+        
+        <!-- Header & Clearance Badge -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-semibold px-2.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-1.5">
+                <span>🛡️</span>
+                Clearance: Supervisor • Manager • Database Admin (DBA) • Staff
+              </span>
+            </div>
+            <h2 class="text-lg font-bold text-slate-900 mt-1.5">MongoDB Shell (mongosh) Query Command Dispatcher</h2>
+            <p class="text-xs text-slate-600">
+              Generate verified <code class="font-mono bg-slate-100 px-1 py-0.2 rounded text-[11px]">mongosh</code> CLI commands on demand based on formal requests from Store Managers, Warehouse Supervisors, or Database Administrators. Copy commands for your terminal or execute live on Atlas with instant tabular &amp; JSON results.
+            </p>
+          </div>
+          <div class="flex items-center space-x-2 shrink-0">
+            <span class="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200">
+              Cluster: Atlas M0 (ShopHere)
+            </span>
+          </div>
+        </div>
+
+        <!-- ══════ NATURAL LANGUAGE AI QUERY ASSISTANT (FREE AI • NO KEY REQUIRED) ══════ -->
+        <div class="bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 border border-blue-200 rounded-lg p-4 shadow-xs space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center space-x-2">
+              <span class="p-1.5 rounded-md bg-blue-600 text-white text-xs shadow-xs">✨</span>
+              <div>
+                <div class="text-xs font-bold text-slate-900 flex items-center space-x-2">
+                  <span>Natural Language Query Assistant</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    Free AI • No API Key Needed
+                  </span>
+                </div>
+                <div class="text-[11px] text-slate-600">
+                  Ask in plain English (e.g. inquiries from Store Managers, Supervisors, or DBAs). Translates directly into MongoDB MQL &amp; mongosh CLI commands.
+                </div>
+              </div>
+            </div>
+
+            <!-- Engine Selector Dropdown / Mode -->
+            <div class="flex items-center space-x-2 shrink-0">
+              <label class="text-[11px] font-medium text-slate-600">AI Engine:</label>
+              <select id="ai-engine-select" onchange="toggleCustomEndpointInput()" class="px-2 py-1 rounded bg-white border border-slate-300 text-[11px] font-medium text-slate-800 focus:outline-none focus:border-blue-600 shadow-2xs">
+                <option value="auto">🌐 Free Cloud AI (Pollinations API + Local Fallback)</option>
+                <option value="local">⚡ Local Smart NLP (Instant 0ms • Offline)</option>
+                <option value="custom">⚙️ Custom Free Endpoint URL...</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Optional Custom Free Endpoint URL input (hidden by default) -->
+          <div id="custom-endpoint-container" class="hidden p-2.5 bg-white border border-slate-200 rounded-md space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-semibold text-slate-700">Custom Free AI Endpoint URL (OpenAI-compatible / No Key):</label>
+              <span class="text-[10px] text-slate-400">e.g. http://localhost:11434/v1/chat/completions (Ollama)</span>
+            </div>
+            <input type="text" id="custom-ai-endpoint" placeholder="https://text.pollinations.ai/" class="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-xs font-mono text-slate-800 focus:outline-none focus:border-blue-600">
+          </div>
+
+          <!-- Natural Language Input & Action Button -->
+          <div class="flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-grow">
+              <input type="text" id="ai-prompt-input" onkeydown="if(event.key === 'Enter') generateAIQuery()" placeholder="Ask anything in plain English, e.g. 'Show items where stock is under 10 sorted by price descending' or 'Total revenue by staff in naira'..." class="w-full pl-8 pr-3 py-2 rounded-md bg-white border border-slate-300 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-inner">
+              <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">💬</span>
+            </div>
+            <button onclick="generateAIQuery()" id="btn-generate-ai" class="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition shadow-xs flex items-center justify-center space-x-1.5 shrink-0">
+              <span id="ai-spinner" class="hidden animate-spin text-xs">⏳</span>
+              <span id="ai-btn-icon">✨</span>
+              <span id="ai-btn-text">Generate Query</span>
+            </button>
+          </div>
+
+          <!-- Quick Suggestion Chips -->
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mr-1">Quick Inquiries:</span>
+            <button onclick="setAIPrompt('Show items with stock less than 10 sorted by price descending')" class="px-2 py-0.5 rounded bg-white hover:bg-slate-100 border border-slate-200 text-[11px] text-slate-700 transition">
+              📉 Low stock under 10
+            </button>
+            <button onclick="setAIPrompt('Total sales revenue grouped by staff name in naira')" class="px-2 py-0.5 rounded bg-white hover:bg-slate-100 border border-slate-200 text-[11px] text-slate-700 transition">
+              👔 Staff revenue ($group)
+            </button>
+            <button onclick="setAIPrompt('Valuation of inventory grouped by category in naira')" class="px-2 py-0.5 rounded bg-white hover:bg-slate-100 border border-slate-200 text-[11px] text-slate-700 transition">
+              📦 Category valuation
+            </button>
+            <button onclick="setAIPrompt('Show all pending orders with total amount greater than 20000')" class="px-2 py-0.5 rounded bg-white hover:bg-slate-100 border border-slate-200 text-[11px] text-slate-700 transition">
+              ⏳ Pending orders &gt; ₦20k
+            </button>
+            <button onclick="setAIPrompt('List suppliers from Lagos or Abuja')" class="px-2 py-0.5 rounded bg-white hover:bg-slate-100 border border-slate-200 text-[11px] text-slate-700 transition">
+              📍 Lagos / Abuja suppliers
+            </button>
+            <button onclick="setAIPrompt('Count active staff and admin users in the system')" class="px-2 py-0.5 rounded bg-white hover:bg-slate-100 border border-slate-200 text-[11px] text-slate-700 transition">
+              🛡️ Active user audit
+            </button>
+          </div>
+
+          <!-- AI Response / Feedback Banner (Hidden until query generated) -->
+          <div id="ai-feedback-banner" class="hidden p-3 rounded-md bg-white border border-blue-200 space-y-2 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="text-xs">🤖</span>
+                <span id="ai-engine-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                  Free AI Engine
+                </span>
+                <span id="ai-latency-tag" class="text-[11px] font-mono text-slate-500">
+                  0ms
+                </span>
+              </div>
+              <button onclick="document.getElementById('ai-feedback-banner').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-xs">✕</button>
+            </div>
+            <div class="text-xs text-slate-800">
+              <span class="font-semibold text-slate-900">Interpretation:</span>
+              <span id="ai-explanation-text">...</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
+              <button onclick="runQueryOnDemand()" class="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold transition shadow-xs flex items-center space-x-1">
+                <span>▶ Run This Query Live on Atlas</span>
+              </button>
+              <button onclick="copyMongoshCommand()" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium transition flex items-center space-x-1">
+                <span>📋 Copy mongosh Command</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════ STEP 1: SELECT REQUESTER PERSONA ══════ -->
+        <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-xs space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-1.5">
+              <span>👤</span>
+              <span>Select Requesting Role / Persona</span>
+            </div>
+            <span class="text-[11px] text-slate-500">Filters query commands by organizational responsibility</span>
+          </div>
+
+          <!-- Persona Selector Buttons -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5" id="persona-tabs">
+            <button onclick="selectPersona('manager')" id="persona-btn-manager" class="persona-tab-btn p-3 rounded-lg border-2 border-blue-600 bg-blue-50/60 text-left transition shadow-xs">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">👔</span>
+                <div>
+                  <div class="text-xs font-bold text-slate-900">Store Manager</div>
+                  <div class="text-[10px] text-slate-500">Revenue, valuation &amp; suppliers</div>
+                </div>
+              </div>
+            </button>
+
+            <button onclick="selectPersona('supervisor')" id="persona-btn-supervisor" class="persona-tab-btn p-3 rounded-lg border border-slate-200 hover:border-slate-300 bg-white text-left transition shadow-xs">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">📋</span>
+                <div>
+                  <div class="text-xs font-bold text-slate-900">Warehouse Supervisor</div>
+                  <div class="text-[10px] text-slate-500">Stock margins, receiving &amp; safety</div>
+                </div>
+              </div>
+            </button>
+
+            <button onclick="selectPersona('dba')" id="persona-btn-dba" class="persona-tab-btn p-3 rounded-lg border border-slate-200 hover:border-slate-300 bg-white text-left transition shadow-xs">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">🛡️</span>
+                <div>
+                  <div class="text-xs font-bold text-slate-900">Database Admin (DBA)</div>
+                  <div class="text-[10px] text-slate-500">Explain, users, storage &amp; schemas</div>
+                </div>
+              </div>
+            </button>
+
+            <button onclick="selectPersona('custom')" id="persona-btn-custom" class="persona-tab-btn p-3 rounded-lg border border-slate-200 hover:border-slate-300 bg-white text-left transition shadow-xs">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">⚡</span>
+                <div>
+                  <div class="text-xs font-bold text-slate-900">Ad-Hoc / Anyone</div>
+                  <div class="text-[10px] text-slate-500">Custom queries &amp; projections</div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Preset Query Cards for Active Persona -->
+          <div class="pt-2 border-t border-slate-100">
+            <div class="text-[11px] font-semibold text-slate-600 mb-2 flex items-center justify-between">
+              <span id="persona-preset-header">Common Inquiries from Store Managers:</span>
+              <span class="text-[10px] text-slate-400">Click any card to load query command</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2" id="persona-preset-grid">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════ STEP 2: QUERY BUILDER CONFIG & GENERATED COMMAND ══════ -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          
+          <!-- Left: Query Parameters (5 cols) -->
+          <div class="lg:col-span-5 bg-white border border-slate-200 rounded-lg p-4 shadow-xs space-y-3.5">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Query Configuration</h3>
+              <span id="active-preset-badge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">Role: Store Manager</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Target Collection</label>
+                <select id="query-col-select" onchange="onQueryParamChange()" class="w-full px-2.5 py-1.5 rounded-md bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-blue-600">
+                  <option value="items">items (Catalog)</option>
+                  <option value="orders">orders (Sales &amp; Fulfillment)</option>
+                  <option value="categories">categories (Taxonomy)</option>
+                  <option value="suppliers">suppliers (Vendors)</option>
+                  <option value="employees">employees (Staff Directory)</option>
+                  <option value="reorderAlerts">reorderAlerts (Trigger Log)</option>
+                  <option value="users">users (Security &amp; Accounts)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Operation</label>
+                <select id="query-op-select" onchange="onQueryParamChange()" class="w-full px-2.5 py-1.5 rounded-md bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-blue-600">
+                  <option value="aggregate">aggregate (Aggregation Pipeline)</option>
+                  <option value="find">find (Filter &amp; Project)</option>
+                  <option value="count">countDocuments (Total Count)</option>
+                  <option value="explain">explain (Execution Stats)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[11px] font-semibold text-slate-700" id="query-body-label">Aggregation Pipeline JSON Array</label>
+                <span class="text-[10px] text-slate-400 font-mono">Valid JSON</span>
+              </div>
+              <textarea id="query-body-textarea" rows="8" oninput="updateGeneratedCommand()" class="w-full px-3 py-2 rounded-md bg-slate-50 border border-slate-300 font-mono text-[11px] text-slate-800 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition resize-y"></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 pt-1">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Result Limit</label>
+                <select id="query-limit-select" onchange="updateGeneratedCommand()" class="w-full px-2.5 py-1.5 rounded-md bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-blue-600">
+                  <option value="10">10 documents</option>
+                  <option value="25" selected>25 documents</option>
+                  <option value="50">50 documents</option>
+                  <option value="100">100 documents</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button onclick="resetQueryEditor()" class="w-full px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition">
+                  Reset Editor
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Generated mongosh Command & Execution Console (7 cols) -->
+          <div class="lg:col-span-7 bg-white border border-slate-200 rounded-lg p-4 shadow-xs space-y-4 flex flex-col justify-between">
+            <div>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-slate-200 gap-2">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Generated mongosh Command</h3>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <button onclick="copyMongoshCommand()" id="btn-copy-command" class="px-2.5 py-1 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-medium transition shadow-xs flex items-center space-x-1">
+                    <span>📋</span>
+                    <span id="copy-btn-text">Copy Command</span>
+                  </button>
+                  <button onclick="runQueryOnDemand()" id="btn-run-query" class="px-3.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition shadow-xs flex items-center space-x-1.5">
+                    <span>▶</span>
+                    <span>Run Query on Demand</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Terminal Code Box -->
+              <div class="mt-3 relative rounded-md bg-slate-900 border border-slate-800 text-slate-100 p-3.5 font-mono text-xs overflow-x-auto shadow-inner">
+                <div class="text-[10px] text-slate-400 mb-2 font-sans flex items-center justify-between border-b border-slate-800 pb-1.5">
+                  <span id="terminal-session-label">mongosh &gt; ShopHere (Store Manager Query)</span>
+                  <span class="text-emerald-400 font-mono">Connected</span>
+                </div>
+                <pre id="mongosh-command-code" class="text-emerald-400 whitespace-pre font-mono text-[11px] leading-relaxed">// Command will generate here...</pre>
+              </div>
+
+              <div class="mt-2 text-[11px] text-slate-500 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <span>💡 Run directly in terminal via: <code class="font-mono bg-slate-100 px-1 py-0.2 rounded text-slate-700">mongosh "&lt;connection_string&gt;"</code></span>
+                <button onclick="copyConnectionCommand()" class="text-blue-600 hover:text-blue-800 text-[11px] font-medium underline">
+                  Copy with mongosh --eval
+                </button>
+              </div>
+            </div>
+
+            <!-- ══════ ON-DEMAND EXECUTION RESULTS DISPLAY ══════ -->
+            <div id="query-results-card" class="mt-4 pt-3 border-t border-slate-200 hidden space-y-3">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div class="flex items-center space-x-2">
+                  <span id="result-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    200 OK — Atlas Success
+                  </span>
+                  <span id="result-latency" class="text-xs text-slate-500 font-mono">0ms latency</span>
+                  <span id="result-count" class="text-xs font-semibold text-slate-800">0 documents</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  <!-- View Switcher -->
+                  <div class="inline-flex rounded-md shadow-xs bg-slate-100 p-0.5 text-[11px]">
+                    <button onclick="switchResultView('table')" id="btn-view-table" class="px-2 py-0.5 rounded font-semibold bg-white text-slate-900 shadow-xs">
+                      📊 Table View
+                    </button>
+                    <button onclick="switchResultView('json')" id="btn-view-json" class="px-2 py-0.5 rounded text-slate-600 hover:text-slate-900">
+                      { } JSON View
+                    </button>
+                  </div>
+                  <!-- Export Actions -->
+                  <button onclick="exportQueryResults('json')" class="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition font-medium" title="Download JSON">
+                    📥 JSON
+                  </button>
+                  <button onclick="exportQueryResults('csv')" class="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition font-medium" title="Download CSV">
+                    📄 CSV
+                  </button>
+                  <button onclick="window.print()" class="px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition font-medium" title="Print Report">
+                    🖨️ Print
+                  </button>
+                </div>
+              </div>
+
+              <!-- Output Containers -->
+              <div id="query-results-table-container" class="max-h-72 overflow-x-auto overflow-y-auto rounded-md border border-slate-200 bg-white">
+                <!-- Dynamic table injected here -->
+              </div>
+
+              <div id="query-results-json-container" class="max-h-72 overflow-y-auto rounded-md bg-slate-50 border border-slate-200 p-3 font-mono text-[11px] text-slate-800 shadow-inner hidden">
+                <pre id="query-results-pre" class="whitespace-pre-wrap">// Query results will render here...</pre>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ══════ STEP 3: SESSION QUERY DISPATCH & AUDIT LOG ══════ -->
+        <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-xs space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-1.5">
+              <span>📜</span>
+              <span>On-Demand Query Dispatch &amp; Audit Log</span>
+            </div>
+            <span class="text-[11px] text-slate-500">History of queries executed on demand in this session</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-700">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="py-2 px-3">Timestamp</th>
+                  <th class="py-2 px-3">Requester Role</th>
+                  <th class="py-2 px-3">Query Purpose</th>
+                  <th class="py-2 px-3">Collection</th>
+                  <th class="py-2 px-3">Latency</th>
+                  <th class="py-2 px-3">Records</th>
+                  <th class="py-2 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="query-audit-log-body" class="divide-y divide-slate-100 font-mono text-[11px]">
+                <tr>
+                  <td colspan="7" class="py-4 text-center text-slate-400 font-sans">No on-demand queries executed yet this session. Click 'Run Query on Demand' above.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MODAL: EDIT STOCK QUANTITY
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="modal-edit-stock" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden">
+    <div class="relative w-full max-w-sm bg-white border border-slate-300 rounded-lg shadow-xl p-5 text-slate-800">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+          <span>📋</span>
+          <span>Update Physical Inventory</span>
+        </h3>
+        <button onclick="closeStockModal()" class="text-slate-400 hover:text-slate-700 p-1 text-sm">✕</button>
+      </div>
+      <form id="form-edit-stock" class="mt-3.5 space-y-3">
+        <input type="hidden" id="edit-stock-item-id">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Item</label>
+          <input type="text" id="edit-stock-item-name" readonly class="w-full px-3 py-1.5 rounded-md bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Physical Stock Count (>= 1)</label>
+          <input type="number" id="edit-stock-qty" required min="1" class="w-full px-3 py-1.5 rounded-md bg-white border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition">
+        </div>
+        <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-200">
+          <button type="button" onclick="closeStockModal()" class="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 bg-white border border-slate-300 rounded-md transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition shadow-xs">
+            Save Stock
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Shared Scripts -->
+  <script src="/tour-system.js"></script>
+  <script src="/auth-system.js"></script>
+
+  <!-- Page Logic -->
+  <script>
+    let rawItems = [];
+    let rawOrders = [];
+
+    async function api(url, opts = {}) {
+      const headers = { ...ShopHereAuth.getHeaders(), ...(opts.headers || {}) };
+      const res = await fetch(url, { ...opts, headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    function checkAccess() {
+      const state = ShopHereAuth.getState();
+      const denied = document.getElementById("access-denied-box");
+      const content = document.getElementById("admin-content");
+
+      if (state.role === "consumer") {
+        denied.classList.remove("hidden");
+        content.classList.add("hidden");
+      } else {
+        denied.classList.add("hidden");
+        content.classList.remove("hidden");
+        loadAll();
+        // Check URL hash on initial load
+        const hash = window.location.hash.replace('#', '');
+        if (hash && ['inventory', 'orders', 'alerts', 'directory', 'analytics', 'queries'].includes(hash)) {
+          switchTab(hash);
+        }
+      }
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll(".tab-btn").forEach(b => {
+        b.className = "tab-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition";
+      });
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.add("hidden"));
+
+      const activeBtn = document.getElementById(`tab-${name}`);
+      const activePanel = document.getElementById(`panel-${name}`);
+      if (activeBtn) activeBtn.className = "tab-btn px-3 py-1.5 rounded-md font-semibold transition bg-blue-600 text-white shadow-xs";
+      if (activePanel) activePanel.classList.remove("hidden");
+      if (window.location.hash !== `#${name}`) {
+        history.replaceState(null, '', `#${name}`);
+      }
+    }
+
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && ['inventory', 'orders', 'alerts', 'directory', 'analytics', 'queries'].includes(hash)) {
+        switchTab(hash);
+      }
+    });
+
+    async function loadAll() {
+      await Promise.all([
+        loadInventory(),
+        loadOrders(),
+        loadAlerts(),
+        loadDirectory(),
+        loadAnalytics()
+      ]);
+    }
+
+    /* ── INVENTORY ── */
+    async function loadInventory() {
+      const tbody = document.getElementById("inventory-table-body");
+      try {
+        rawItems = await api("/api/items");
+        document.getElementById("stat-items-count").textContent = rawItems.length;
+        renderInventory(rawItems);
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="9" class="py-4 text-center text-rose-700 bg-rose-50 text-xs">${e.message}</td></tr>`;
+      }
+    }
+
+    function renderInventory(items) {
+      const tbody = document.getElementById("inventory-table-body");
+      if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-500">No items match the filter.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = items.map(item => {
+        const isCritical = item.quantityInHand <= 0;
+        const isLow = item.quantityInHand <= item.reorderLevel;
+
+        let healthHtml = '';
+        if (isCritical) {
+          healthHtml = `
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+              Critical (0)
+            </span>
+          `;
+        } else if (isLow) {
+          healthHtml = `
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Low
+            </span>
+          `;
+        } else {
+          healthHtml = `
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              Healthy
+            </span>
+          `;
+        }
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-3.5 font-semibold text-slate-900">${item.itemName}</td>
+            <td class="py-2.5 px-3.5 text-slate-600">${item.category?.categoryName || 'General'}</td>
+            <td class="py-2.5 px-3.5 text-slate-600">${item.supplier?.supplierName || '—'}</td>
+            <td class="py-2.5 px-3.5">${healthHtml}</td>
+            <td class="py-2.5 px-3.5 font-bold ${isLow ? 'text-amber-800' : 'text-slate-800'}">${item.quantityInHand} units</td>
+            <td class="py-2.5 px-3.5 text-slate-500">${item.reorderLevel} units</td>
+            <td class="py-2.5 px-3.5 text-slate-500">${item.reorderQuantity || item.reorderLevel} units</td>
+            <td class="py-2.5 px-3.5 font-mono text-slate-900 font-semibold">₦${Number(item.unitPrice).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td class="py-2.5 px-3.5 text-right">
+              <button onclick="openStockModal('${item._id}', '${item.itemName.replace(/'/g, "\\'")}', ${item.quantityInHand})" class="px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition shadow-xs">
+                Edit Stock
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterInventory() {
+      const q = document.getElementById("inventory-search").value.toLowerCase();
+      const filtered = rawItems.filter(i => i.itemName.toLowerCase().includes(q));
+      renderInventory(filtered);
+    }
+
+    function openStockModal(id, name, qty) {
+      document.getElementById("edit-stock-item-id").value = id;
+      document.getElementById("edit-stock-item-name").value = name;
+      document.getElementById("edit-stock-qty").value = qty;
+      document.getElementById("modal-edit-stock").classList.remove("hidden");
+    }
+
+    function closeStockModal() {
+      document.getElementById("modal-edit-stock").classList.add("hidden");
+    }
+
+    document.getElementById("form-edit-stock").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("edit-stock-item-id").value;
+      const quantityInHand = parseInt(document.getElementById("edit-stock-qty").value);
+      try {
+        await api(`/api/items/${id}/stock`, {
+          method: "PATCH",
+          body: JSON.stringify({ quantityInHand })
+        });
+        closeStockModal();
+        alert("✅ Inventory stock level updated successfully in MongoDB Atlas!");
+        loadInventory();
+        loadAlerts();
+      } catch (err) { alert("Error: " + err.message); }
+    });
+
+    /* ── ORDERS ── */
+    async function loadOrders() {
+      const tbody = document.getElementById("orders-table-body");
+      try {
+        rawOrders = await api("/api/orders");
+        const inTransit = rawOrders.filter(o => o.orderStatus === "InTransit").length;
+        document.getElementById("stat-intransit-count").textContent = inTransit;
+
+        if (!rawOrders.length) {
+          tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-slate-500">No purchase orders logged yet.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = rawOrders.map(o => {
+          let statusBadge = '';
+          if (o.orderStatus === 'Received') {
+            statusBadge = `
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                Received
+              </span>
+            `;
+          } else if (o.orderStatus === 'InTransit') {
+            statusBadge = `
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                In-Transit
+              </span>
+            `;
+          } else {
+            statusBadge = `
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                ${o.orderStatus}
+              </span>
+            `;
+          }
+
+          return `
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="py-2.5 px-3.5 font-mono text-xs text-slate-500 font-semibold">${o._id.slice(-6)}</td>
+              <td class="py-2.5 px-3.5 font-semibold text-slate-900">${o.item?.itemName || 'Unknown Item'}</td>
+              <td class="py-2.5 px-3.5 text-slate-600">${o.customerName || (o.employee ? (o.employee.firstName + ' ' + o.employee.lastName) : 'Staff Admin')}</td>
+              <td class="py-2.5 px-3.5 font-bold text-slate-800">${o.quantityOrdered} units</td>
+              <td class="py-2.5 px-3.5">${statusBadge}</td>
+              <td class="py-2.5 px-3.5 text-xs text-slate-500 font-mono">${new Date(o.orderDate).toLocaleDateString()}</td>
+              <td class="py-2.5 px-3.5 text-xs text-slate-500 font-mono">${o.receivingDate ? new Date(o.receivingDate).toLocaleDateString() : '—'}</td>
+              <td class="py-2.5 px-3.5 text-right">
+                ${o.orderStatus === 'InTransit' ? `
+                  <button onclick="receiveOrder('${o._id}', ${o.quantityOrdered})" class="px-2.5 py-1 text-xs font-semibold rounded-md bg-blue-600 hover:bg-blue-700 text-white transition shadow-xs">
+                    Mark Received
+                  </button>
+                ` : '<span class="text-xs text-slate-400 font-medium">Completed</span>'}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-rose-700 bg-rose-50 text-xs">${e.message}</td></tr>`;
+      }
+    }
+
+    async function receiveOrder(id, qty) {
+      if (!confirm(`Mark Order ${id.slice(-6)} as Received?\n\nThis will trigger MongoDB stock replenishment: inventory in hand increases by ${qty} units and safety reorder levels are re-evaluated.`)) return;
+      try {
+        const res = await api(`/api/orders/${id}/status`, {
+          method: "PATCH",
+          body: JSON.stringify({ orderStatus: "Received", quantityReceived: qty })
+        });
+        alert(`✅ Order Received!\n\nTrigger Summary:\n• Stock Updated: ${res.triggerResult?.stockUpdated ? 'Yes' : 'No'}\n• Reorder Alert Created: ${res.triggerResult?.alertCreated ? 'Yes (Stock <= Reorder Level)' : 'None needed'}`);
+        loadAll();
+      } catch (err) { alert("Error: " + err.message); }
+    }
+
+    /* ── REORDER ALERTS (WORK QUEUE) ── */
+    async function loadAlerts() {
+      const container = document.getElementById("alerts-container");
+      const badge = document.getElementById("tab-alerts-badge");
+      try {
+        const alerts = await api("/api/reorder-alerts");
+        document.getElementById("stat-alerts-count").textContent = alerts.length;
+        if (alerts.length > 0) {
+          badge.textContent = alerts.length;
+          badge.classList.remove("hidden");
+        } else {
+          badge.classList.add("hidden");
+        }
+
+        if (!alerts.length) {
+          container.innerHTML = `
+            <div class="py-10 text-center text-slate-500 bg-white border border-slate-200 rounded-lg p-6">
+              <span class="text-2xl block mb-1">✅</span>
+              <div class="text-xs font-semibold text-slate-800">All inventory levels are optimal</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">No products currently below their minimum safety thresholds.</div>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = alerts.map(a => `
+          <div class="p-3.5 rounded-lg bg-white border-l-4 border-l-rose-600 border-t border-r border-b border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="font-bold text-slate-900 text-sm">${a.itemName}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-50 text-rose-800 border border-rose-200">Action Required</span>
+              </div>
+              <div class="text-xs text-slate-600 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span>Current Stock: <strong class="text-rose-700 font-semibold">${a.currentStock} units</strong></span>
+                <span>Threshold: <strong class="text-slate-800">${a.reorderLevel} units</strong></span>
+                <span>Recommended Reorder: <strong class="text-blue-700 font-semibold">+${a.reorderQuantity} units</strong></span>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-1 font-mono">Triggered: ${new Date(a.alertDate).toLocaleString()}</div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <button onclick="switchTab('inventory')" class="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition shadow-xs whitespace-nowrap">
+                Inspect Stock →
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        container.innerHTML = `<div class="text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-md text-xs">${e.message}</div>`;
+      }
+    }
+
+    async function clearReorderAlerts() {
+      const state = ShopHereAuth.getState();
+      if (state.role !== "superadmin") {
+        alert("❌ Permission Denied: Only Super Admin (Iyiola) has authority to clear system-wide reorder alerts.");
+        return;
+      }
+      if (!confirm("Clear all active reorder alerts from the database?")) return;
+      try {
+        await api("/api/reorder-alerts", { method: "DELETE" });
+        alert("✅ All alerts cleared from MongoDB Atlas!");
+        loadAlerts();
+      } catch (e) { alert("Error: " + e.message); }
+    }
+
+    /* ── DIRECTORY ── */
+    async function loadDirectory() {
+      const sBody = document.getElementById("suppliers-table-body");
+      const eBody = document.getElementById("employees-table-body");
+      try {
+        const [sups, emps] = await Promise.all([api("/api/suppliers"), api("/api/employees")]);
+        sBody.innerHTML = sups.map(s => `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-3.5 font-semibold text-slate-900">${s.supplierName}</td>
+            <td class="py-2.5 px-3.5 font-mono text-xs text-blue-700 font-medium">${s.phone}</td>
+            <td class="py-2.5 px-3.5 text-slate-600">${s.email}</td>
+            <td class="py-2.5 px-3.5 text-slate-500">${s.address || '—'}</td>
+          </tr>
+        `).join('');
+
+        eBody.innerHTML = emps.map(e => `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-3.5 font-semibold text-slate-900">${e.firstName} ${e.lastName}</td>
+            <td class="py-2.5 px-3.5">
+              <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200">
+                ${e.role}
+              </span>
+            </td>
+            <td class="py-2.5 px-3.5 font-mono text-xs text-slate-600">${e.phone}</td>
+            <td class="py-2.5 px-3.5 text-slate-600">${e.email}</td>
+            <td class="py-2.5 px-3.5 text-slate-500 font-mono">${new Date(e.hireDate).toLocaleDateString()}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        sBody.innerHTML = eBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-rose-700 text-xs">${err.message}</td></tr>`;
+      }
+    }
+
+    /* ── ATLAS DATA VISUALIZATIONS & ANALYTICS ── */
+    let chartSalesStaff = null;
+    let chartCategoryVal = null;
+    let chartStockHealth = null;
+    let chartSupplierVol = null;
+
+    async function loadAnalytics() {
+      const sBody = document.getElementById("sales-table-body");
+      const topBody = document.getElementById("top-suppliers-table-body");
+      try {
+        const [sales, topSuppliers, catVal, items] = await Promise.all([
+          api("/api/analytics/sales-by-employee").catch(() => []),
+          api("/api/analytics/top-suppliers").catch(() => []),
+          api("/api/analytics/category-valuation").catch(() => []),
+          api("/api/items").catch(() => [])
+        ]);
+
+        // 1. Financial Metrics in Naira (₦)
+        const totalSalesRevenue = sales.reduce((sum, r) => sum + (r.totalValue || 0), 0);
+        
+        let totalInventoryVal = 0;
+        let totalStockUnits = 0;
+        let healthyCount = 0;
+        let lowCount = 0;
+        let criticalCount = 0;
+
+        if (items && items.length) {
+          items.forEach(item => {
+            const qty = Number(item.quantityInHand) || 0;
+            const price = Number(item.unitPrice) || 0;
+            const reorder = Number(item.reorderLevel) || 0;
+            totalInventoryVal += qty * price;
+            totalStockUnits += qty;
+
+            if (qty === 0) {
+              criticalCount++;
+            } else if (qty <= reorder) {
+              lowCount++;
+            } else {
+              healthyCount++;
+            }
+          });
+        }
+
+        // Update Top Strip & Analytics KPI Cards (All formatted in Naira ₦)
+        const formattedSales = `₦${totalSalesRevenue.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const formattedVal = `₦${totalInventoryVal.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        const statTotalEl = document.getElementById("stat-total-value");
+        if (statTotalEl) statTotalEl.textContent = formattedSales;
+
+        const statRevEl = document.getElementById("stat-analytics-revenue");
+        if (statRevEl) statRevEl.textContent = formattedSales;
+
+        const statValEl = document.getElementById("stat-analytics-valuation");
+        if (statValEl) statValEl.textContent = formattedVal;
+
+        const statUnitsEl = document.getElementById("stat-analytics-units");
+        if (statUnitsEl) statUnitsEl.textContent = `${totalStockUnits.toLocaleString()} units`;
+
+        const statAlertsEl = document.getElementById("stat-analytics-alerts");
+        if (statAlertsEl) statAlertsEl.textContent = `${(lowCount + criticalCount)} items`;
+
+        // 2. Render Chart 1: Fulfilled Sales Revenue by Staff (₦)
+        renderStaffSalesChart(sales);
+
+        // 3. Render Chart 2: Inventory Asset Valuation by Category (₦)
+        renderCategoryValuationChart(catVal, items);
+
+        // 4. Render Chart 3: Stock Health Distribution
+        renderStockHealthChart(healthyCount, lowCount, criticalCount);
+
+        // 5. Render Chart 4: Supplier Stock Allocation
+        renderSupplierAllocationChart(topSuppliers);
+
+        // 6. Update Tabular Sales Breakdown
+        if (!sales.length) {
+          sBody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-500">No received orders recorded in Atlas aggregation pipeline yet.</td></tr>`;
+        } else {
+          sBody.innerHTML = sales.map(s => `
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="py-2.5 px-3.5 font-semibold text-slate-900">${s._id.employeeName || 'Staff Admin'}</td>
+              <td class="py-2.5 px-3.5 font-mono text-slate-600">${s._id.month}/${s._id.year}</td>
+              <td class="py-2.5 px-3.5 font-bold text-slate-800">${s.totalOrders} orders</td>
+              <td class="py-2.5 px-3.5 text-slate-600">${s.totalQuantity || 0} units</td>
+              <td class="py-2.5 px-3.5 font-mono font-bold text-slate-900 text-right">₦${(s.totalValue || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+          `).join('');
+        }
+
+        // 7. Update Top Suppliers Table
+        if (topBody) {
+          if (!topSuppliers.length) {
+            topBody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-500">No supplier volume data.</td></tr>`;
+          } else {
+            topBody.innerHTML = topSuppliers.map(sup => `
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="py-2.5 px-3.5 font-semibold text-slate-900">${sup.supplierName}</td>
+                <td class="py-2.5 px-3.5 font-mono text-slate-600">${sup.phone}</td>
+                <td class="py-2.5 px-3.5 text-slate-700">${sup.itemCount} items</td>
+                <td class="py-2.5 px-3.5 font-mono font-bold text-slate-900 text-right">${sup.totalStock} units</td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (err) {
+        console.error("loadAnalytics error:", err);
+        if (sBody) sBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-rose-700 text-xs">${err.message}</td></tr>`;
+      }
+    }
+
+    function renderStaffSalesChart(sales) {
+      const canvas = document.getElementById("chart-sales-staff");
+      if (!canvas || !window.Chart) return;
+      if (chartSalesStaff) chartSalesStaff.destroy();
+
+      const labels = sales && sales.length ? sales.map(s => s._id.employeeName || 'Staff') : ['Tomiwa', 'Solomon', 'Samuel'];
+      const dataValues = sales && sales.length ? sales.map(s => s.totalValue || 0) : [0, 0, 0];
+
+      chartSalesStaff = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Fulfilled Sales (₦)',
+            data: dataValues,
+            backgroundColor: 'rgba(37, 99, 235, 0.85)',
+            borderColor: '#1d4ed8',
+            borderWidth: 1.5,
+            borderRadius: 4,
+            maxBarThickness: 45
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `Revenue: ₦${Number(ctx.raw).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (val) => `₦${Number(val).toLocaleString()}`,
+                font: { size: 10 }
+              },
+              grid: { color: 'rgba(226, 232, 240, 0.8)' }
+            },
+            x: {
+              ticks: { font: { size: 11, weight: '600' } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function renderCategoryValuationChart(catVal, items) {
+      const canvas = document.getElementById("chart-category-valuation");
+      if (!canvas || !window.Chart) return;
+      if (chartCategoryVal) chartCategoryVal.destroy();
+
+      let labels = [];
+      let valuations = [];
+
+      if (catVal && catVal.length) {
+        labels = catVal.map(c => c._id || 'General');
+        valuations = catVal.map(c => c.totalValuation || 0);
+      } else if (items && items.length) {
+        const catMap = {};
+        items.forEach(i => {
+          const cName = i.category?.categoryName || 'General';
+          catMap[cName] = (catMap[cName] || 0) + (Number(i.quantityInHand) * Number(i.unitPrice));
+        });
+        labels = Object.keys(catMap);
+        valuations = Object.values(catMap);
+      } else {
+        labels = ['Household', 'Accessories', 'Sports', 'Clothing'];
+        valuations = [0, 0, 0, 0];
+      }
+
+      const colors = [
+        'rgba(37, 99, 235, 0.85)',
+        'rgba(5, 150, 105, 0.85)',
+        'rgba(217, 119, 6, 0.85)',
+        'rgba(124, 58, 237, 0.85)'
+      ];
+
+      chartCategoryVal = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Asset Valuation (₦)',
+            data: valuations,
+            backgroundColor: colors.slice(0, labels.length),
+            borderRadius: 4,
+            maxBarThickness: 36
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `Valuation: ₦${Number(ctx.raw).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: {
+                callback: (val) => `₦${Number(val).toLocaleString()}`,
+                font: { size: 10 }
+              },
+              grid: { color: 'rgba(226, 232, 240, 0.8)' }
+            },
+            y: {
+              ticks: { font: { size: 11, weight: '600' } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function renderStockHealthChart(healthy, low, critical) {
+      const canvas = document.getElementById("chart-stock-health");
+      if (!canvas || !window.Chart) return;
+      if (chartStockHealth) chartStockHealth.destroy();
+
+      const total = healthy + low + critical;
+      const data = total === 0 ? [1, 0, 0] : [healthy, low, critical];
+
+      chartStockHealth = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['Healthy Margin', 'Low Stock (≤ Reorder)', 'Critical (0 units)'],
+          datasets: [{
+            data,
+            backgroundColor: ['#059669', '#d97706', '#dc2626'],
+            borderWidth: 2,
+            borderColor: '#ffffff',
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 12, font: { size: 11 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.label}: ${ctx.raw} catalog item(s)`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderSupplierAllocationChart(suppliers) {
+      const canvas = document.getElementById("chart-supplier-volume");
+      if (!canvas || !window.Chart) return;
+      if (chartSupplierVol) chartSupplierVol.destroy();
+
+      const labels = suppliers && suppliers.length ? suppliers.map(s => s.supplierName) : ['Alpha Goods', 'BetaSport', 'Gamma Wear'];
+      const data = suppliers && suppliers.length ? suppliers.map(s => s.totalStock) : [0, 0, 0];
+
+      chartSupplierVol = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Physical Stock (Units)',
+            data,
+            backgroundColor: 'rgba(99, 102, 241, 0.85)',
+            borderColor: '#4f46e5',
+            borderWidth: 1.5,
+            borderRadius: 4,
+            maxBarThickness: 45
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.raw} units in warehouse`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { font: { size: 10 } },
+              grid: { color: 'rgba(226, 232, 240, 0.8)' }
+            },
+            x: {
+              ticks: { font: { size: 10, weight: '600' } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    /* ── ATLAS CHARTS LIVE EMBED FRAME ── */
+    function toggleAtlasEmbed() {
+      const el = document.getElementById("atlas-embed-container");
+      const btn = document.getElementById("btn-toggle-embed");
+      if (!el) return;
+      el.classList.toggle("hidden");
+      if (!el.classList.contains("hidden")) {
+        btn.classList.add("bg-blue-100", "font-bold");
+      } else {
+        btn.classList.remove("bg-blue-100", "font-bold");
+      }
+    }
+
+    function updateAtlasEmbedUrl() {
+      const input = document.getElementById("atlas-embed-url-input");
+      const iframe = document.getElementById("atlas-charts-iframe");
+      const placeholder = document.getElementById("atlas-charts-placeholder");
+      if (!input || !iframe || !placeholder) return;
+
+      const url = input.value.trim();
+      if (!url) {
+        alert("Please enter a valid MongoDB Atlas Charts dashboard embed URL.");
+        return;
+      }
+      iframe.src = url;
+      iframe.classList.remove("hidden");
+      placeholder.classList.add("hidden");
+    }
+
+    function loadSampleAtlasDashboard() {
+      const input = document.getElementById("atlas-embed-url-input");
+      input.value = "https://charts.mongodb.com/charts-shophere-demo/embed/dashboards?id=shophere-live";
+      alert("Demo Atlas Charts URL configured! You can replace this with your project's authenticated or unauthenticated MongoDB Atlas Charts Embed URL.");
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       PERSONA-BASED MONGOSH QUERY DISPATCHER & ON-DEMAND RUNNER
+       ══════════════════════════════════════════════════════════════ */
+    const PERSONA_CATALOG = {
+      manager: {
+        title: "Store Manager Requests",
+        badge: "Role: Store Manager",
+        inquiriesHeader: "Common Inquiries from Store Managers (Financial & Vendor Performance):",
+        presets: {
+          valuation: {
+            title: "📊 Category Inventory Valuation (₦)",
+            opBadge: "aggregate",
+            opBadgeClass: "text-blue-600",
+            summary: "Asset valuation in Nigerian Naira (₦) by category.",
+            col: "items",
+            op: "aggregate",
+            requester: "Store Manager",
+            purpose: "Category Inventory Asset Valuation (₦)",
+            body: JSON.stringify([
+              { $lookup: { from: "categories", localField: "categoryId", foreignField: "_id", as: "category" } },
+              { $unwind: "$category" },
+              {
+                $group: {
+                  _id: "$category.categoryName",
+                  itemCount: { $sum: 1 },
+                  totalStock: { $sum: "$quantityInHand" },
+                  totalValuation: { $sum: { $multiply: ["$quantityInHand", "$unitPrice"] } }
+                }
+              },
+              { $sort: { totalValuation: -1 } }
+            ], null, 2)
+          },
+          employeeSales: {
+            title: "💰 Staff Fulfilled Revenue ($group)",
+            opBadge: "aggregate",
+            opBadgeClass: "text-blue-600",
+            summary: "Fulfilled sales volume & revenue per employee in Naira.",
+            col: "orders",
+            op: "aggregate",
+            requester: "Store Manager",
+            purpose: "Staff Fulfilled Sales Revenue Breakdown",
+            body: JSON.stringify([
+              { $match: { orderStatus: "Received" } },
+              { $lookup: { from: "employees", localField: "employeeId", foreignField: "_id", as: "emp" } },
+              { $unwind: "$emp" },
+              { $lookup: { from: "items", localField: "itemId", foreignField: "_id", as: "item" } },
+              { $unwind: "$item" },
+              {
+                $group: {
+                  _id: {
+                    employeeId: "$employeeId",
+                    employeeName: { $concat: ["$emp.firstName", " ", "$emp.lastName"] }
+                  },
+                  totalOrders: { $sum: 1 },
+                  totalUnits: { $sum: "$quantityReceived" },
+                  totalRevenue: { $sum: { $multiply: ["$quantityReceived", "$item.unitPrice"] } }
+                }
+              },
+              { $sort: { totalRevenue: -1 } }
+            ], null, 2)
+          },
+          highValue: {
+            title: "💎 High-Value Catalog Assets (≥ ₦100)",
+            opBadge: "find",
+            opBadgeClass: "text-emerald-600",
+            summary: "Premium products with unit price over ₦100.00.",
+            col: "items",
+            op: "find",
+            requester: "Store Manager",
+            purpose: "High-Value Inventory Audit (≥ ₦100)",
+            body: JSON.stringify({
+              unitPrice: { $gte: 100.0 }
+            }, null, 2)
+          },
+          suppliers: {
+            title: "🏭 Vendor Supply Share & Volume",
+            opBadge: "aggregate",
+            opBadgeClass: "text-blue-600",
+            summary: "Active catalog units and item counts per supplier.",
+            col: "suppliers",
+            op: "aggregate",
+            requester: "Store Manager",
+            purpose: "Supplier Stock Volume Allocation",
+            body: JSON.stringify([
+              { $lookup: { from: "items", localField: "_id", foreignField: "supplierId", as: "suppliedItems" } },
+              {
+                $project: {
+                  supplierName: 1,
+                  phone: 1,
+                  email: 1,
+                  itemCount: { $size: "$suppliedItems" },
+                  totalStock: { $sum: "$suppliedItems.quantityInHand" }
+                }
+              },
+              { $sort: { totalStock: -1 } }
+            ], null, 2)
+          }
+        }
+      },
+      supervisor: {
+        title: "Warehouse Supervisor Requests",
+        badge: "Role: Warehouse Supervisor",
+        inquiriesHeader: "Common Inquiries from Warehouse Supervisors (Stock & Intake Flow):",
+        presets: {
+          lowStock: {
+            title: "⚠️ Low Stock Reorder Margin",
+            opBadge: "find",
+            opBadgeClass: "text-amber-600",
+            summary: "Items where current stock is at or below safety reorder level.",
+            col: "items",
+            op: "find",
+            requester: "Warehouse Supervisor",
+            purpose: "Items Below Safety Reorder Threshold",
+            body: JSON.stringify({
+              $expr: { $lte: ["$quantityInHand", "$reorderLevel"] }
+            }, null, 2)
+          },
+          inTransit: {
+            title: "🚚 In-Transit Shipments Awaiting Intake",
+            opBadge: "find",
+            opBadgeClass: "text-blue-600",
+            summary: "Purchase orders awaiting physical intake at loading dock.",
+            col: "orders",
+            op: "find",
+            requester: "Warehouse Supervisor",
+            purpose: "In-Transit Purchase Orders Intake Checklist",
+            body: JSON.stringify({
+              orderStatus: "InTransit"
+            }, null, 2)
+          },
+          criticalOut: {
+            title: "🚫 Out-of-Stock Item Audit",
+            opBadge: "find",
+            opBadgeClass: "text-rose-600",
+            summary: "Items with zero physical units in warehouse.",
+            col: "items",
+            op: "find",
+            requester: "Warehouse Supervisor",
+            purpose: "Critical Stockout Items Audit",
+            body: JSON.stringify({
+              quantityInHand: { $lte: 0 }
+            }, null, 2)
+          },
+          alertsQueue: {
+            title: "🔔 Active Reorder Trigger Alerts",
+            opBadge: "find",
+            opBadgeClass: "text-rose-600",
+            summary: "Safety margin notifications triggered by automated replenishment.",
+            col: "reorderAlerts",
+            op: "find",
+            requester: "Warehouse Supervisor",
+            purpose: "Reorder Trigger Work Queue",
+            body: JSON.stringify({}, null, 2)
+          }
+        }
+      },
+      dba: {
+        title: "Database Administrator (DBA) Requests",
+        badge: "Role: Database Admin (DBA)",
+        inquiriesHeader: "Common Inquiries from Database Admins (Schema, Security & Execution):",
+        presets: {
+          users: {
+            title: "🛡️ User Accounts & RBAC Roles",
+            opBadge: "find",
+            opBadgeClass: "text-purple-600",
+            summary: "Audit system user accounts, roles & clearances (no hashes).",
+            col: "users",
+            op: "find",
+            requester: "Database Admin (DBA)",
+            purpose: "System User Accounts & Security Clearances Audit",
+            body: JSON.stringify({}, null, 2)
+          },
+          explainStats: {
+            title: "⚡ Query Execution Plan & Index Stats",
+            opBadge: "explain",
+            opBadgeClass: "text-indigo-600",
+            summary: "Analyze index usage and query execution stats via .explain().",
+            col: "items",
+            op: "explain",
+            requester: "Database Admin (DBA)",
+            purpose: "Index Execution Stats & Query Performance",
+            body: JSON.stringify({
+              categoryId: { $exists: true }
+            }, null, 2)
+          },
+          collectionCounts: {
+            title: "📦 Orders Document Count",
+            opBadge: "count",
+            opBadgeClass: "text-blue-600",
+            summary: "Total document count in orders collection.",
+            col: "orders",
+            op: "count",
+            requester: "Database Admin (DBA)",
+            purpose: "Orders Collection Document Count Diagnostic",
+            body: JSON.stringify({}, null, 2)
+          },
+          schemaAudit: {
+            title: "🔍 Received Orders Schema Verification",
+            opBadge: "find",
+            opBadgeClass: "text-emerald-600",
+            summary: "Verify order status and receiving date field integrity.",
+            col: "orders",
+            op: "find",
+            requester: "Database Admin (DBA)",
+            purpose: "Orders Schema & Field Verification",
+            body: JSON.stringify({
+              orderStatus: "Received"
+            }, null, 2)
+          }
+        }
+      },
+      custom: {
+        title: "Ad-Hoc / Anyone with Access",
+        badge: "Role: Anyone with Access",
+        inquiriesHeader: "Custom Inquiries & Exploratory Queries:",
+        presets: {
+          customItems: {
+            title: "📦 Catalog Inventory Active Stock",
+            opBadge: "find",
+            opBadgeClass: "text-blue-600",
+            summary: "All items currently in stock.",
+            col: "items",
+            op: "find",
+            requester: "Staff / Custom User",
+            purpose: "Active Catalog Inventory Exploration",
+            body: JSON.stringify({ quantityInHand: { $gt: 0 } }, null, 2)
+          },
+          customOrders: {
+            title: "📑 Recent Orders Exploration",
+            opBadge: "find",
+            opBadgeClass: "text-blue-600",
+            summary: "Latest orders placed in the system.",
+            col: "orders",
+            op: "find",
+            requester: "Staff / Custom User",
+            purpose: "Recent Orders Placement Exploration",
+            body: JSON.stringify({}, null, 2)
+          },
+          customBuilder: {
+            title: "🛠️ Blank Query Builder",
+            opBadge: "custom",
+            opBadgeClass: "text-slate-600",
+            summary: "Start from scratch with custom parameters.",
+            col: "items",
+            op: "find",
+            requester: "Staff / Custom User",
+            purpose: "Ad-Hoc Custom Query",
+            body: JSON.stringify({}, null, 2)
+          }
+        }
+      }
+    };
+
+    let activePersonaKey = "manager";
+    let activePresetKey = "valuation";
+    let currentQueryConfig = null;
+    let lastQueryResults = null;
+    const queryAuditLog = [];
+
+    function selectPersona(personaKey) {
+      activePersonaKey = personaKey;
+      const persona = PERSONA_CATALOG[personaKey] || PERSONA_CATALOG.manager;
+
+      // Update persona tab buttons styling
+      document.querySelectorAll(".persona-tab-btn").forEach(btn => {
+        btn.className = "persona-tab-btn p-3 rounded-lg border border-slate-200 hover:border-slate-300 bg-white text-left transition shadow-xs";
+      });
+      const activeTab = document.getElementById(`persona-btn-${personaKey}`);
+      if (activeTab) {
+        activeTab.className = "persona-tab-btn p-3 rounded-lg border-2 border-blue-600 bg-blue-50/60 text-left transition shadow-xs font-bold";
+      }
+
+      // Update header text
+      const headerEl = document.getElementById("persona-preset-header");
+      if (headerEl) headerEl.textContent = persona.inquiriesHeader;
+
+      // Update terminal session label
+      const sessionLabel = document.getElementById("terminal-session-label");
+      if (sessionLabel) sessionLabel.textContent = `mongosh > ShopHere (${persona.title})`;
+
+      renderPersonaPresets(personaKey);
+    }
+
+    function renderPersonaPresets(personaKey) {
+      const persona = PERSONA_CATALOG[personaKey] || PERSONA_CATALOG.manager;
+      const grid = document.getElementById("persona-preset-grid");
+      if (!grid) return;
+
+      const keys = Object.keys(persona.presets);
+      grid.innerHTML = keys.map((k, index) => {
+        const p = persona.presets[k];
+        const isFirst = index === 0;
+        return `
+          <button onclick="loadPersonaPreset('${personaKey}', '${k}')" id="preset-card-${k}" class="preset-card text-left p-2.5 rounded-md border ${isFirst ? 'border-blue-500 bg-blue-50/60 ring-1 ring-blue-500' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'} transition shadow-xs">
+            <div class="font-semibold text-xs text-slate-900 flex items-center justify-between">
+              <span class="truncate pr-1">${p.title}</span>
+              <span class="text-[10px] ${p.opBadgeClass} font-mono shrink-0">${p.opBadge}</span>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-2">${p.summary}</p>
+          </button>
+        `;
+      }).join('');
+
+      if (keys.length) {
+        loadPersonaPreset(personaKey, keys[0]);
+      }
+    }
+
+    function loadPersonaPreset(personaKey, presetKey) {
+      activePersonaKey = personaKey;
+      activePresetKey = presetKey;
+      const persona = PERSONA_CATALOG[personaKey] || PERSONA_CATALOG.manager;
+      const preset = persona.presets[presetKey];
+      if (!preset) return;
+
+      currentQueryConfig = { ...preset, personaKey };
+
+      const colSelect = document.getElementById("query-col-select");
+      const opSelect = document.getElementById("query-op-select");
+      const textarea = document.getElementById("query-body-textarea");
+      const badge = document.getElementById("active-preset-badge");
+      const bodyLabel = document.getElementById("query-body-label");
+
+      if (colSelect) colSelect.value = preset.col;
+      if (opSelect) opSelect.value = preset.op;
+      if (textarea) textarea.value = preset.body;
+      if (badge) badge.textContent = `${preset.requester}: ${preset.title.replace(/^[^\w\s]+/, '').trim()}`;
+      if (bodyLabel) {
+        bodyLabel.textContent = preset.op === 'aggregate' ? 'Aggregation Pipeline JSON Array' : 'Query Filter JSON Object';
+      }
+
+      // Card highlight
+      document.querySelectorAll(".preset-card").forEach(c => {
+        c.className = "preset-card text-left p-2.5 rounded-md border border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50 transition shadow-xs";
+      });
+      const selectedCard = document.getElementById(`preset-card-${presetKey}`);
+      if (selectedCard) {
+        selectedCard.className = "preset-card text-left p-2.5 rounded-md border border-blue-500 bg-blue-50/60 ring-1 ring-blue-500 transition shadow-xs";
+      }
+
+      updateGeneratedCommand();
+    }
+
+    function onQueryParamChange() {
+      const op = document.getElementById("query-op-select").value;
+      const bodyLabel = document.getElementById("query-body-label");
+      if (bodyLabel) {
+        bodyLabel.textContent = op === 'aggregate' ? 'Aggregation Pipeline JSON Array' : 'Query Filter JSON Object';
+      }
+      updateGeneratedCommand();
+    }
+
+    function updateGeneratedCommand() {
+      const col = document.getElementById("query-col-select")?.value || "items";
+      const op = document.getElementById("query-op-select")?.value || "find";
+      const bodyRaw = document.getElementById("query-body-textarea")?.value || "{}";
+      const limit = document.getElementById("query-limit-select")?.value || "25";
+      const codeEl = document.getElementById("mongosh-command-code");
+
+      const requesterName = currentQueryConfig?.requester || "Authorized User";
+      const purpose = currentQueryConfig?.purpose || `${col} ${op} inquiry`;
+
+      let cmd = `// -----------------------------------------------------\n`;
+      cmd += `// REQUESTER: ${requesterName}\n`;
+      cmd += `// PURPOSE  : ${purpose}\n`;
+      cmd += `// -----------------------------------------------------\n\n`;
+      cmd += `// 1. Switch to ShopHere database\nuse ShopHere;\n\n`;
+
+      if (op === "aggregate") {
+        cmd += `// 2. Execute aggregation pipeline on '${col}' collection\n`;
+        cmd += `db.${col}.aggregate(${bodyRaw})`;
+        if (limit) cmd += `.limit(${limit})`;
+        cmd += `;\n`;
+      } else if (op === "count") {
+        cmd += `// 2. Count matching documents in '${col}' collection\n`;
+        cmd += `db.${col}.countDocuments(${bodyRaw});\n`;
+      } else if (op === "explain") {
+        cmd += `// 2. Explain query execution plan & index stats\n`;
+        cmd += `db.${col}.find(${bodyRaw}).explain("executionStats");\n`;
+      } else {
+        cmd += `// 2. Query documents in '${col}' collection\n`;
+        cmd += `db.${col}.find(${bodyRaw})`;
+        if (col === "users") cmd += `.projection({ passwordHash: 0 })`;
+        cmd += `.limit(${limit});\n`;
+      }
+
+      if (codeEl) codeEl.textContent = cmd;
+    }
+
+    function resetQueryEditor() {
+      selectPersona("custom");
+      loadPersonaPreset("custom", "customBuilder");
+    }
+
+    async function copyMongoshCommand() {
+      const codeEl = document.getElementById("mongosh-command-code");
+      const btnText = document.getElementById("copy-btn-text");
+      if (!codeEl) return;
+
+      try {
+        await navigator.clipboard.writeText(codeEl.textContent);
+        if (btnText) {
+          btnText.textContent = "Copied! ✓";
+          setTimeout(() => { btnText.textContent = "Copy Command"; }, 2000);
+        }
+      } catch (e) {
+        alert("Clipboard copy failed. Please select text manually.");
+      }
+    }
+
+    async function copyConnectionCommand() {
+      const col = document.getElementById("query-col-select")?.value || "items";
+      const op = document.getElementById("query-op-select")?.value || "find";
+      const bodyRaw = document.getElementById("query-body-textarea")?.value || "{}";
+      const cleanBody = bodyRaw.replace(/\s+/g, ' ').trim();
+      const evalCmd = `mongosh "<MONGODB_ATLAS_URI>" --eval "use ShopHere; printjson(db.${col}.${op}(${cleanBody}))"`;
+      try {
+        await navigator.clipboard.writeText(evalCmd);
+        alert(`Copied mongosh eval command to clipboard:\n\n${evalCmd}\n\nReplace <MONGODB_ATLAS_URI> with your connection string from .env!`);
+      } catch (e) {
+        prompt("Copy this mongosh terminal command:", evalCmd);
+      }
+    }
+
+    function setAIPrompt(text) {
+      const input = document.getElementById("ai-prompt-input");
+      if (input) {
+        input.value = text;
+        input.focus();
+        generateAIQuery();
+      }
+    }
+
+    function toggleCustomEndpointInput() {
+      const select = document.getElementById("ai-engine-select");
+      const container = document.getElementById("custom-endpoint-container");
+      if (!select || !container) return;
+      if (select.value === "custom") {
+        container.classList.remove("hidden");
+        document.getElementById("custom-ai-endpoint")?.focus();
+      } else {
+        container.classList.add("hidden");
+      }
+    }
+
+    async function generateAIQuery() {
+      const input = document.getElementById("ai-prompt-input");
+      const prompt = input?.value?.trim();
+      if (!prompt) {
+        alert("Please enter a natural language query prompt (e.g. 'Show items with stock less than 10').");
+        input?.focus();
+        return;
+      }
+
+      const engineSelect = document.getElementById("ai-engine-select")?.value || "auto";
+      const customEndpoint = document.getElementById("custom-ai-endpoint")?.value?.trim();
+      const btn = document.getElementById("btn-generate-ai");
+      const spinner = document.getElementById("ai-spinner");
+      const icon = document.getElementById("ai-btn-icon");
+      const btnText = document.getElementById("ai-btn-text");
+
+      const banner = document.getElementById("ai-feedback-banner");
+      const engineBadge = document.getElementById("ai-engine-badge");
+      const latencyTag = document.getElementById("ai-latency-tag");
+      const explanationEl = document.getElementById("ai-explanation-text");
+
+      if (btn) btn.disabled = true;
+      if (spinner) spinner.classList.remove("hidden");
+      if (icon) icon.classList.add("hidden");
+      if (btnText) btnText.textContent = "AI Translating...";
+
+      const requestPayload = {
+        prompt,
+        forceEngine: engineSelect === "local" ? "local" : (engineSelect === "custom" ? "cloud" : "auto"),
+        customEndpoint: engineSelect === "custom" && customEndpoint ? customEndpoint : undefined
+      };
+
+      try {
+        const res = await api("/api/query/ai-translate", {
+          method: "POST",
+          body: JSON.stringify(requestPayload)
+        });
+
+        if (!res.success) {
+          throw new Error(res.error || "Failed to generate query from prompt.");
+        }
+
+        const colSelect = document.getElementById("query-col-select");
+        const opSelect = document.getElementById("query-op-select");
+        const bodyTextarea = document.getElementById("query-body-textarea");
+        const limitSelect = document.getElementById("query-limit-select");
+        const badge = document.getElementById("active-preset-badge");
+
+        if (colSelect) colSelect.value = res.collection || "items";
+        if (opSelect) opSelect.value = res.operation || "find";
+        if (limitSelect && res.limit) limitSelect.value = String(res.limit);
+
+        if (bodyTextarea) {
+          if (res.operation === "aggregate") {
+            bodyTextarea.value = JSON.stringify(res.pipeline || [], null, 2);
+          } else {
+            bodyTextarea.value = JSON.stringify(res.filter || {}, null, 2);
+          }
+        }
+
+        const bodyLabel = document.getElementById("query-body-label");
+        if (bodyLabel) {
+          bodyLabel.textContent = res.operation === "aggregate" ? "Aggregation Pipeline JSON Array" : "Filter Query JSON Document";
+        }
+
+        const codeEl = document.getElementById("mongosh-command-code");
+        const sessionLabel = document.getElementById("terminal-session-label");
+        if (codeEl) {
+          codeEl.textContent = res.mongoshCommand || "// Query generated";
+        }
+        if (sessionLabel) {
+          sessionLabel.textContent = `mongosh > ShopHere (AI Query: ${res.collection}.${res.operation})`;
+        }
+
+        if (badge) {
+          badge.textContent = `AI: ${res.engine.split('(')[0].trim()}`;
+        }
+
+        if (engineBadge) {
+          engineBadge.textContent = res.engine || "Free AI";
+          if (res.engine.includes("Local")) {
+            engineBadge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300";
+          } else {
+            engineBadge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200";
+          }
+        }
+        if (latencyTag) {
+          latencyTag.textContent = `${res.latencyMs !== undefined ? res.latencyMs : 0}ms latency`;
+        }
+        if (explanationEl) {
+          explanationEl.textContent = res.explanation || `Query on ${res.collection} matching your criteria.`;
+        }
+        if (banner) {
+          banner.classList.remove("hidden");
+        }
+
+        currentQueryConfig = {
+          requester: "Natural Language AI Assistant",
+          purpose: res.explanation || prompt,
+          col: res.collection,
+          op: res.operation
+        };
+
+      } catch (err) {
+        alert("Natural Language Query generation error: " + (err.message || err));
+      } finally {
+        if (btn) btn.disabled = false;
+        if (spinner) spinner.classList.add("hidden");
+        if (icon) icon.classList.remove("hidden");
+        if (btnText) btnText.textContent = "Generate Query";
+      }
+    }
+
+    async function runQueryOnDemand() {
+      const col = document.getElementById("query-col-select").value;
+      const op = document.getElementById("query-op-select").value;
+      const bodyRaw = document.getElementById("query-body-textarea").value.trim() || "{}";
+      const limit = parseInt(document.getElementById("query-limit-select").value || "25");
+      const btn = document.getElementById("btn-run-query");
+      const card = document.getElementById("query-results-card");
+      const pre = document.getElementById("query-results-pre");
+      const tableContainer = document.getElementById("query-results-table-container");
+      const badge = document.getElementById("result-status-badge");
+      const latencyEl = document.getElementById("result-latency");
+      const countEl = document.getElementById("result-count");
+
+      let parsedBody;
+      try {
+        parsedBody = JSON.parse(bodyRaw);
+      } catch (err) {
+        alert("Invalid JSON syntax in query editor: " + err.message);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<span>⏳</span><span>Executing Query...</span>`;
+      card.classList.remove("hidden");
+      pre.textContent = "Running query against MongoDB Atlas cluster...";
+      tableContainer.innerHTML = `<div class="p-6 text-center text-xs text-slate-500">Executing live query on MongoDB Atlas...</div>`;
+
+      const payload = {
+        collection: col,
+        operation: op,
+        limit
+      };
+
+      if (op === "aggregate") {
+        payload.pipeline = Array.isArray(parsedBody) ? parsedBody : [parsedBody];
+      } else {
+        payload.filter = parsedBody;
+        if (col === "users") payload.projection = { passwordHash: 0 };
+      }
+
+      const startTime = performance.now();
+      try {
+        const res = await api("/api/query/run", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        const elapsed = Math.round(performance.now() - startTime);
+        lastQueryResults = res;
+
+        badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200";
+        badge.textContent = "200 OK — Atlas Success";
+        latencyEl.textContent = `${res.executionTimeMs || elapsed}ms latency`;
+        const count = res.count !== undefined ? res.count : (res.results ? res.results.length : 0);
+        countEl.textContent = `${count} record(s) returned`;
+
+        // 1. Render Table View
+        renderResultsTable(res.results, col, op);
+
+        // 2. Render JSON View
+        pre.textContent = JSON.stringify(res.results, null, 2);
+
+        // 3. Log to Session Audit
+        logQueryAudit({
+          timestamp: new Date(),
+          requester: currentQueryConfig?.requester || "Authorized User",
+          purpose: currentQueryConfig?.purpose || `${col}.${op}`,
+          col,
+          latency: `${res.executionTimeMs || elapsed}ms`,
+          count: `${count} doc(s)`
+        });
+
+      } catch (err) {
+        const elapsed = Math.round(performance.now() - startTime);
+        badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200";
+        badge.textContent = "Atlas Query Error";
+        latencyEl.textContent = `${elapsed}ms`;
+        countEl.textContent = "Failed";
+        pre.textContent = `[Atlas Execution Error]:\n${err.message}\n\nPlease check your MQL syntax, field names, and collection name.`;
+        tableContainer.innerHTML = `<div class="p-6 text-center text-xs text-rose-700 font-semibold bg-rose-50">${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>▶</span><span>Run Query on Demand</span>`;
+      }
+    }
+
+    function renderResultsTable(results, col, op) {
+      const container = document.getElementById("query-results-table-container");
+      if (!container) return;
+
+      if (!results || !results.length) {
+        container.innerHTML = `<div class="p-6 text-center text-xs text-slate-500">Query executed successfully, but no matching documents were found in '${col}'.</div>`;
+        return;
+      }
+
+      // If results are count or explain
+      if (op === "count") {
+        container.innerHTML = `
+          <div class="p-6 text-center">
+            <div class="text-[10px] uppercase font-bold text-slate-500">Total Count</div>
+            <div class="text-3xl font-mono font-bold text-slate-900 mt-1">${results[0]?.count || 0}</div>
+            <div class="text-xs text-slate-500 mt-1">Collection: <code class="font-mono">${col}</code></div>
+          </div>
+        `;
+        return;
+      }
+
+      if (op === "explain") {
+        const stats = results[0]?.executionStats || results[0];
+        container.innerHTML = `
+          <div class="p-4 space-y-2">
+            <div class="text-xs font-bold text-slate-900">Execution Plan Summary:</div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div class="p-2 bg-slate-50 rounded border border-slate-200">
+                <span class="text-[10px] text-slate-500 block uppercase">Execution Time</span>
+                <span class="font-mono font-bold text-emerald-700">${stats.executionTimeMillis || 0} ms</span>
+              </div>
+              <div class="p-2 bg-slate-50 rounded border border-slate-200">
+                <span class="text-[10px] text-slate-500 block uppercase">Docs Examined</span>
+                <span class="font-mono font-bold text-slate-900">${stats.totalDocsExamined || 0}</span>
+              </div>
+              <div class="p-2 bg-slate-50 rounded border border-slate-200">
+                <span class="text-[10px] text-slate-500 block uppercase">Keys Examined</span>
+                <span class="font-mono font-bold text-slate-900">${stats.totalKeysExamined || 0}</span>
+              </div>
+              <div class="p-2 bg-slate-50 rounded border border-slate-200">
+                <span class="text-[10px] text-slate-500 block uppercase">Returned Docs</span>
+                <span class="font-mono font-bold text-blue-700">${stats.nReturned || 0}</span>
+              </div>
+            </div>
+            <div class="text-[11px] text-slate-500 pt-1">Full explain diagnostic tree is viewable in <strong>{ } JSON View</strong>.</div>
+          </div>
+        `;
+        return;
+      }
+
+      // Extract keys from first object
+      const first = results[0];
+      const keys = Object.keys(first).filter(k => k !== '__v');
+
+      let html = `<table class="w-full text-left text-xs text-slate-700">`;
+      html += `<thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]"><tr>`;
+      keys.forEach(k => {
+        let label = k;
+        if (k === '_id') label = 'ID / Group';
+        if (k === 'unitPrice') label = 'Unit Price (₦)';
+        if (k === 'totalValuation') label = 'Total Valuation (₦)';
+        if (k === 'totalRevenue') label = 'Total Revenue (₦)';
+        html += `<th class="py-2 px-3">${label}</th>`;
+      });
+      html += `</tr></thead><tbody class="divide-y divide-slate-100">`;
+
+      results.forEach(row => {
+        html += `<tr class="hover:bg-slate-50 transition-colors">`;
+        keys.forEach(k => {
+          let val = row[k];
+          let display = '';
+
+          if (val === null || val === undefined) {
+            display = `<span class="text-slate-400">—</span>`;
+          } else if (typeof val === 'object') {
+            if (val.employeeName) {
+              display = `<span class="font-semibold text-slate-900">${val.employeeName}</span>`;
+            } else if (val.categoryName) {
+              display = `<span class="font-semibold text-slate-900">${val.categoryName}</span>`;
+            } else if (val.supplierName) {
+              display = `<span class="font-semibold text-slate-900">${val.supplierName}</span>`;
+            } else {
+              display = `<code class="text-[10px] bg-slate-100 px-1 rounded">${JSON.stringify(val).slice(0, 30)}</code>`;
+            }
+          } else if (k === 'unitPrice' || k === 'totalValuation' || k === 'totalRevenue' || k === 'totalValue') {
+            display = `<span class="font-mono font-bold text-slate-900">₦${Number(val).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
+          } else if (k === 'orderStatus') {
+            const badgeCls = val === 'Received' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-blue-50 text-blue-800 border-blue-200';
+            display = `<span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${badgeCls}">${val}</span>`;
+          } else if (k === '_id' && typeof val === 'string' && val.length === 24) {
+            display = `<span class="font-mono text-slate-500 font-semibold text-[10px]">${val.slice(-6)}</span>`;
+          } else {
+            display = `<span class="${typeof val === 'number' ? 'font-mono' : ''}">${val}</span>`;
+          }
+
+          html += `<td class="py-2 px-3">${display}</td>`;
+        });
+        html += `</tr>`;
+      });
+
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+    }
+
+    function switchResultView(view) {
+      const tableContainer = document.getElementById("query-results-table-container");
+      const jsonContainer = document.getElementById("query-results-json-container");
+      const btnTable = document.getElementById("btn-view-table");
+      const btnJson = document.getElementById("btn-view-json");
+
+      if (view === 'table') {
+        tableContainer.classList.remove("hidden");
+        jsonContainer.classList.add("hidden");
+        btnTable.className = "px-2 py-0.5 rounded font-semibold bg-white text-slate-900 shadow-xs";
+        btnJson.className = "px-2 py-0.5 rounded text-slate-600 hover:text-slate-900";
+      } else {
+        tableContainer.classList.add("hidden");
+        jsonContainer.classList.remove("hidden");
+        btnJson.className = "px-2 py-0.5 rounded font-semibold bg-white text-slate-900 shadow-xs";
+        btnTable.className = "px-2 py-0.5 rounded text-slate-600 hover:text-slate-900";
+      }
+    }
+
+    function logQueryAudit(entry) {
+      queryAuditLog.unshift(entry);
+      if (queryAuditLog.length > 8) queryAuditLog.pop();
+
+      const tbody = document.getElementById("query-audit-log-body");
+      if (!tbody) return;
+
+      tbody.innerHTML = queryAuditLog.map(item => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="py-2 px-3 text-slate-500 font-mono text-[10px]">${item.timestamp.toLocaleTimeString()}</td>
+          <td class="py-2 px-3 font-semibold text-slate-900 text-xs">${item.requester}</td>
+          <td class="py-2 px-3 text-slate-700 text-xs">${item.purpose}</td>
+          <td class="py-2 px-3 text-blue-700 font-mono text-xs">${item.col}</td>
+          <td class="py-2 px-3 text-emerald-700 font-mono text-xs">${item.latency}</td>
+          <td class="py-2 px-3 font-bold text-slate-800 text-xs">${item.count}</td>
+          <td class="py-2 px-3 text-right">
+            <button onclick="runQueryOnDemand()" class="text-blue-600 hover:text-blue-800 text-[11px] font-semibold underline">Re-run</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function exportQueryResults(format) {
+      if (!lastQueryResults || !lastQueryResults.results || !lastQueryResults.results.length) {
+        alert("No query results to export. Run a query first!");
+        return;
+      }
+
+      if (format === 'csv') {
+        const rows = lastQueryResults.results;
+        const keys = Object.keys(rows[0]);
+        let csv = keys.join(',') + '\n';
+        rows.forEach(r => {
+          csv += keys.map(k => {
+            let v = r[k];
+            if (typeof v === 'object' && v !== null) v = JSON.stringify(v);
+            return `"${String(v || '').replace(/"/g, '""')}"`;
+          }).join(',') + '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `ShopHere_${lastQueryResults.collection}_${Date.now()}.csv`;
+        a.click();
+      } else {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lastQueryResults, null, 2));
+        const a = document.createElement("a");
+        a.href = dataStr;
+        a.download = `ShopHere_${lastQueryResults.collection}_${Date.now()}.json`;
+        a.click();
+      }
+    }
+
+    // INIT
+    ShopHereAuth.renderGlobalNavbar("admin");
+    ShopHereAuth.onAuthChange(() => {
+      ShopHereAuth.renderGlobalNavbar("admin");
+      checkAccess();
+    });
+    checkAccess();
+    selectPersona("manager");
+  </script>
+</body>
+</html>

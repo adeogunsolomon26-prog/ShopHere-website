@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ShopHere Storefront — Dependable retail catalog featuring Household, Sports, Accessories, and Clothing inventory with live MongoDB Atlas validation.">
+  <title>ShopHere — Customer Storefront</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans antialiased selection:bg-blue-600 selection:text-white">
+
+  <!-- Global Navbar Component Container -->
+  <div id="global-navbar"></div>
+
+  <!-- Store Header & Filter Bar -->
+  <header class="bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Product Catalog
+          </h1>
+          <p class="text-sm text-slate-600 mt-1 max-w-2xl">
+            Browse available inventory across Household, Sports, Accessories, and Clothing categories.
+          </p>
+        </div>
+      </div>
+
+      <!-- Category Filter Navigation & Search Bar -->
+      <div class="mt-5 pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <!-- Compact Category Filters -->
+        <div class="flex items-center space-x-1.5 overflow-x-auto pb-1" id="category-chips">
+          <button onclick="setCategoryFilter('')" class="cat-chip px-3 py-1.5 rounded-md text-xs font-medium transition bg-slate-900 text-white shadow-xs" data-cat="">
+            All Items
+          </button>
+          <button onclick="setCategoryFilter('Household')" class="cat-chip px-3 py-1.5 rounded-md text-xs font-medium transition bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 border border-slate-300" data-cat="Household">
+            🏠 Household
+          </button>
+          <button onclick="setCategoryFilter('Sports')" class="cat-chip px-3 py-1.5 rounded-md text-xs font-medium transition bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 border border-slate-300" data-cat="Sports">
+            ⚽ Sports
+          </button>
+          <button onclick="setCategoryFilter('Accessories')" class="cat-chip px-3 py-1.5 rounded-md text-xs font-medium transition bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 border border-slate-300" data-cat="Accessories">
+            ⌚ Accessories
+          </button>
+          <button onclick="setCategoryFilter('Clothing')" class="cat-chip px-3 py-1.5 rounded-md text-xs font-medium transition bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 border border-slate-300" data-cat="Clothing">
+            👕 Clothing
+          </button>
+        </div>
+
+        <!-- Practical Search Input -->
+        <div class="relative w-full sm:w-64">
+          <input type="text" id="store-search" oninput="filterCatalog()" placeholder="Search products..." class="w-full pl-8 pr-3 py-1.5 rounded-md bg-white border border-slate-300 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition">
+          <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Product Catalog Shelf Grid -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div id="catalog-status" class="hidden mb-3 text-xs font-medium text-slate-500"></div>
+
+    <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <!-- Loading State -->
+      <div class="col-span-full py-16 text-center text-slate-500">
+        <div class="inline-block animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full mb-2"></div>
+        <div class="text-xs">Loading available products...</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       QUICK-ORDER MODAL: CONVENTIONAL RETAIL ORDER FORM
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="modal-order" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden">
+    <div class="relative w-full max-w-md bg-white border border-slate-300 rounded-lg shadow-xl p-6 text-slate-800">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+        <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+          <span>🛒</span>
+          <span>Submit Quick Order Request</span>
+        </h3>
+        <button onclick="closeOrderModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-md text-sm">✕</button>
+      </div>
+
+      <form id="form-order" class="mt-4 space-y-3.5">
+        <input type="hidden" id="order-item-id">
+        <input type="hidden" id="order-unit-price">
+
+        <!-- Selected Product Summary Box -->
+        <div class="p-3 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between">
+          <div>
+            <div id="order-item-name" class="font-semibold text-slate-900 text-sm">Item Name</div>
+            <div id="order-item-category" class="text-xs text-slate-500">Category</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] uppercase font-semibold text-slate-500">Unit Price</div>
+            <div id="order-item-price" class="text-base font-mono font-bold text-slate-900">₦0.00</div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Customer / Requester Name</label>
+          <input type="text" id="order-customer-name" required class="w-full px-3 py-2 rounded-md bg-white border border-slate-300 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition placeholder:text-slate-400" placeholder="e.g. John Doe">
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-semibold text-slate-700">Requested Quantity (units)</label>
+            <span id="order-available-stock" class="text-xs font-medium text-slate-600">Available: --</span>
+          </div>
+          <input type="number" id="order-quantity" required min="1" value="1" oninput="updateOrderTotal()" class="w-full px-3 py-2 rounded-md bg-white border border-slate-300 text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition">
+        </div>
+
+        <div class="pt-2.5 border-t border-slate-200 flex justify-between items-center">
+          <span class="text-xs font-medium text-slate-600">Estimated Total:</span>
+          <span id="order-total-amount" class="text-lg font-mono font-bold text-slate-900">₦0.00</span>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-200">
+          <button type="button" onclick="closeOrderModal()" class="px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 bg-white border border-slate-300 rounded-md transition">
+            Cancel
+          </button>
+          <button type="submit" id="btn-submit-order" class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition shadow-xs">
+            Submit Order Request →
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Shared Scripts -->
+  <script src="/tour-system.js"></script>
+  <script src="/auth-system.js"></script>
+
+  <!-- Storefront Logic -->
+  <script>
+    let allItems = [];
+    let currentCategory = "";
+
+    async function api(url, opts = {}) {
+      const headers = { ...ShopHereAuth.getHeaders(), ...(opts.headers || {}) };
+      const res = await fetch(url, { ...opts, headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    async function loadCatalog() {
+      const grid = document.getElementById("product-grid");
+      try {
+        const url = currentCategory ? `/api/items?category=${encodeURIComponent(currentCategory)}` : "/api/items";
+        allItems = await api(url);
+        renderCatalog(allItems);
+      } catch (e) {
+        grid.innerHTML = `<div class="col-span-full py-8 text-center text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-4">Failed to load catalog: ${e.message}</div>`;
+      }
+    }
+
+    function renderCatalog(items) {
+      const grid = document.getElementById("product-grid");
+      if (!items.length) {
+        grid.innerHTML = `
+          <div class="col-span-full py-16 text-center text-slate-500 bg-white border border-slate-200 rounded-md p-8">
+            <span class="text-3xl block mb-2">🔍</span>
+            <div class="text-sm font-semibold text-slate-800">No products match this filter</div>
+            <div class="text-xs text-slate-500 mt-1">Try switching categories or clearing your search query.</div>
+          </div>
+        `;
+        return;
+      }
+
+      const catIcons = {
+        Household: "🏠",
+        Sports: "⚽",
+        Accessories: "⌚",
+        Clothing: "👕"
+      };
+
+      grid.innerHTML = items.map(item => {
+        const isLow = item.quantityInHand <= item.reorderLevel;
+        const isOutOfStock = item.quantityInHand <= 0;
+        const icon = catIcons[item.category?.categoryName] || "📦";
+        
+        let stockBadgeHtml = '';
+        if (isOutOfStock) {
+          stockBadgeHtml = `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-rose-50 text-rose-800 border border-rose-200">Out of Stock</span>`;
+        } else if (isLow) {
+          stockBadgeHtml = `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">Low: ${item.quantityInHand} left</span>`;
+        } else {
+          stockBadgeHtml = `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">In Stock: ${item.quantityInHand}</span>`;
+        }
+
+        return `
+          <div class="bg-white border border-slate-200 rounded-lg overflow-hidden flex flex-col justify-between hover:border-slate-300 transition-colors shadow-xs">
+            <!-- Retail Shelf Label Header / Category & Stock -->
+            <div class="h-32 bg-slate-50/80 border-b border-slate-100 flex items-center justify-center relative p-3">
+              <span class="text-4xl text-slate-700">${icon}</span>
+              <span class="absolute top-2.5 left-2.5 px-2 py-0.5 rounded text-[11px] font-medium bg-white text-slate-700 border border-slate-200 shadow-2xs">
+                ${item.category?.categoryName || 'General'}
+              </span>
+              <div class="absolute top-2.5 right-2.5">
+                ${stockBadgeHtml}
+              </div>
+            </div>
+
+            <!-- Product Details -->
+            <div class="p-4 flex-grow flex flex-col justify-between">
+              <div>
+                <h3 class="text-sm font-semibold text-slate-900 tracking-tight leading-snug line-clamp-2">
+                  ${item.itemName}
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">
+                  Supplier: <span class="text-slate-700 font-medium">${item.supplier?.supplierName || 'Verified Supplier'}</span>
+                </p>
+              </div>
+
+              <!-- Shelf Price & Quick Order Action -->
+              <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div>
+                  <div class="text-[10px] uppercase font-semibold text-slate-400">Unit Price</div>
+                  <div class="text-base font-bold text-slate-900 font-mono">₦${Number(item.unitPrice).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+                <button onclick="openOrderModal('${item._id}', '${item.itemName.replace(/'/g, "\\'")}', '${item.category?.categoryName || ''}', ${item.unitPrice}, ${item.quantityInHand})" class="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition shadow-xs flex items-center space-x-1">
+                  <span>🛒</span>
+                  <span>Order</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setCategoryFilter(cat) {
+      currentCategory = cat;
+      document.querySelectorAll(".cat-chip").forEach(b => {
+        if (b.dataset.cat === cat) {
+          b.className = "cat-chip px-3 py-1.5 rounded-md text-xs font-medium transition bg-slate-900 text-white shadow-xs";
+        } else {
+          b.className = "cat-chip px-3 py-1.5 rounded-md text-xs font-medium transition bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 border border-slate-300";
+        }
+      });
+      loadCatalog();
+    }
+
+    function filterCatalog() {
+      const q = document.getElementById("store-search").value.toLowerCase();
+      const filtered = allItems.filter(i => i.itemName.toLowerCase().includes(q));
+      renderCatalog(filtered);
+    }
+
+    function openOrderModal(id, name, cat, price, stock) {
+      document.getElementById("order-item-id").value = id;
+      document.getElementById("order-unit-price").value = price;
+      document.getElementById("order-item-name").textContent = name;
+      document.getElementById("order-item-category").textContent = cat;
+      document.getElementById("order-item-price").textContent = `₦${Number(price).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById("order-available-stock").textContent = `Available: ${stock} units`;
+      document.getElementById("order-quantity").value = 1;
+      updateOrderTotal();
+      document.getElementById("modal-order").classList.remove("hidden");
+    }
+
+    function closeOrderModal() {
+      document.getElementById("modal-order").classList.add("hidden");
+    }
+
+    function updateOrderTotal() {
+      const price = parseFloat(document.getElementById("order-unit-price").value || 0);
+      const qty = parseInt(document.getElementById("order-quantity").value || 1);
+      const total = price * qty;
+      document.getElementById("order-total-amount").textContent = `₦${Number(total).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    document.getElementById("form-order").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const itemId = document.getElementById("order-item-id").value;
+      const quantityOrdered = parseInt(document.getElementById("order-quantity").value);
+      const customerName = document.getElementById("order-customer-name").value.trim();
+      const submitBtn = document.getElementById("btn-submit-order");
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting Order...";
+
+      try {
+        const res = await api("/api/orders", {
+          method: "POST",
+          body: JSON.stringify({ itemId, quantityOrdered, customerName })
+        });
+        closeOrderModal();
+        alert(`🎉 Order Placed Successfully!\n\nOrder ID: ${res.orderId}\nStatus: In Transit\n\nThank you for your order! Our warehouse team will prepare and deliver your items.`);
+        loadCatalog();
+      } catch (err) {
+        alert("Order failed: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Order Request →";
+      }
+    });
+
+    // INIT
+    ShopHereAuth.renderGlobalNavbar("store");
+    ShopHereAuth.onAuthChange(() => {
+      ShopHereAuth.renderGlobalNavbar("store");
+      loadCatalog();
+    });
+    loadCatalog();
+  </script>
+</body>
+</html>
