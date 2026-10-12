@@ -909,22 +909,18 @@ async function boot() {
     await client.connect();
     db = client.db(dbName);
     console.log("✅  Connected to MongoDB Atlas — database:", dbName);
-
-    app.listen(PORT, () => {
-      console.log(`\n🚀  ShopHere server running at http://localhost:${PORT}`);
-      console.log(`   🏠  Master Portal:    http://localhost:${PORT}/`);
-      console.log(`   📦  Storefront:       http://localhost:${PORT}/store.html`);
-      console.log(`   🛠  Admin Dashboard:   http://localhost:${PORT}/admin.html`);
-      console.log(`   🔐  Security Panel:    http://localhost:${PORT}/admin-security.html`);
-      console.log(`   🧪  Proof of Work:     http://localhost:${PORT}/proof-of-work.html\n`);
-    });
-  } catch (err) {
+ } catch (err) {
     console.error("❌  Failed to start server:", err.message);
     process.exit(1);
   }
 }
 
+boot();
+
 if (require.main === module) {
-  boot();
+  app.listen(PORT, () => {
+    console.log(`\n🚀 ShopHere server running at http://localhost:${PORT}/`);
+  });
 }
+
 module.exports = app;
