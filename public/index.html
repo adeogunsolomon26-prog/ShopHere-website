@@ -1,85 +1,109 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ShopHere - Marketplace</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<style>body{font-family:'Inter',sans-serif}</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{font-family:'Inter',sans-serif;background:#f7f7f7}</style>
 </head>
-<body class="bg-[#f7f7f7]">
-<!-- BLUE HEADER LIKE EBAY -->
-<header class="bg-[#0064D2] text-white p-4 sticky top-0 z-50">
-  <div class="max-w-7xl mx-auto flex justify-between items-center">
-    <h1 class="text-3xl font-bold flex items-center gap-2">🛍️ ShopHere</h1>
-    <div class="flex gap-4 text-xl">
-      <span>💬</span><span>❤️</span><span>🛒</span><span>👤</span>
-    </div>
+<body>
+<!-- HEADER - eBay Blue -->
+<header class="bg-[#0064D2] sticky top-0 z-50">
+  <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-6">
+    <div class="flex items-center gap-2 text-white font-bold text-[22px]"><span class="bg-white text-[#0064D2] w-8 h-8 rounded flex items-center justify-center">🛍️</span> ShopHere</div>
+    <nav class="hidden md:flex gap-5 text-white text-sm font-medium"><span>Shop</span><span>Sell</span><span>Categories ▾</span></nav>
+    <div class="flex-1"></div>
+    <div class="flex gap-4 text-white text-xl"><span>💬</span><span>♡</span><span>🔔</span><span>🛒</span></div>
   </div>
 </header>
 
-<!-- BIG SEARCH LIKE EBAY -->
-<div class="max-w-5xl mx-auto mt-6 px-4">
-  <div class="bg-white rounded-full shadow-md flex p-2 border">
-    <input id="search" placeholder="Search for anything — phones, fashion, home..." class="flex-1 px-6 py-3 outline-none text-lg rounded-full">
-    <button onclick="search()" class="bg-[#0064D2] text-white px-8 py-3 rounded-full font-bold hover:bg-blue-700">Search</button>
+<!-- SEARCH -->
+<div class="bg-[#0064D2] pb-6 pt-2">
+  <div class="max-w-[1400px] mx-auto px-4">
+    <div class="bg-white rounded-full flex items-center p-1.5 shadow-lg">
+      <span class="pl-4 text-gray-400">🔍</span>
+      <input id="searchInput" class="flex-1 px-3 py-2 outline-none text-[15px]" placeholder="Search for anything — sneakers, furniture, electronics, collectibles...">
+      <button onclick="doSearch()" class="bg-[#0064D2] text-white px-7 py-2.5 rounded-full font-semibold text-sm">Search</button>
+    </div>
   </div>
 </div>
 
-<!-- CATEGORIES LIKE OFFERUP -->
-<div class="max-w-7xl mx-auto mt-6 px-4 flex gap-3 overflow-x-auto pb-2">
-  <button class="bg-[#0064D2] text-white px-5 py-2 rounded-full whitespace-nowrap">All</button>
-  <button class="bg-white px-5 py-2 rounded-full shadow whitespace-nowrap">📱 Electronics</button>
-  <button class="bg-white px-5 py-2 rounded-full shadow whitespace-nowrap">👕 Fashion</button>
-  <button class="bg-white px-5 py-2 rounded-full shadow whitespace-nowrap">🏠 Home</button>
-  <button class="bg-white px-5 py-2 rounded-full shadow whitespace-nowrap">🚗 Motors</button>
-</div>
-
-<!-- PRODUCTS GRID LIKE OFFERUP -->
-<div class="max-w-7xl mx-auto mt-8 px-4">
-  <h2 class="text-2xl font-bold mb-4">Trending Now <span class="text-[#0064D2] text-lg ml-2">See all ›</span></h2>
-  <div id="products" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-    <!-- Products load here from your API -->
+<div class="max-w-[1400px] mx-auto px-4 py-4">
+  <!-- CATEGORIES -->
+  <div class="flex gap-2 overflow-x-auto pb-3 text-sm whitespace-nowrap">
+    <button class="cat-btn bg-[#0064D2] text-white px-4 py-1.5 rounded-full" data-cat="All">All Categories</button>
+    <button class="cat-btn bg-white px-4 py-1.5 rounded-full border" data-cat="Electronics">📱 Electronics</button>
+    <button class="cat-btn bg-white px-4 py-1.5 rounded-full border" data-cat="Fashion">👕 Fashion</button>
+    <button class="cat-btn bg-white px-4 py-1.5 rounded-full border" data-cat="Home">🏠 Home & Garden</button>
+    <button class="cat-btn bg-white px-4 py-1.5 rounded-full border" data-cat="Motors">🚗 Motors</button>
+    <button class="cat-btn bg-white px-4 py-1.5 rounded-full border" data-cat="Collectibles">⭐ Collectibles</button>
   </div>
+
+  <!-- TRENDING -->
+  <div class="flex items-center justify-between mt-6 mb-3">
+    <h2 class="font-bold text-[18px]">Trending Now <span class="text-[#0064D2] text-sm font-normal ml-2 cursor-pointer">See all ›</span></h2>
+  </div>
+  <div id="trending" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <!-- Products injected here -->
+  </div>
+
+  <div class="flex items-center justify-between mt-8 mb-3">
+    <h2 class="font-bold text-[18px]">Just For You <span class="text-[#0064D2] text-sm font-normal ml-2">See all ›</span></h2>
+  </div>
+  <div id="foryou" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
 </div>
 
 <script>
-// Load products from your LIVE API
+let allProducts = [];
 async function loadProducts(){
   try{
     const res = await fetch('/api/products');
-    const data = await res.json();
-    const container = document.getElementById('products');
-    if(data.length === 0){
-      // Demo products if DB empty
-      container.innerHTML = `
-        ${demoCard('$45','iPhone 14 Pro','Lagos, NG','📱')}
-        ${demoCard('$72','Nike Air Max','Abuja, NG','👟')}
-        ${demoCard('$18','Plant Pot','Lagos, NG','🌿')}
-        ${demoCard('$59','Headphones','Port Harcourt, NG','🎧')}
-        ${demoCard('$120','Apple Watch','Lagos, NG','⌚')}
-        ${demoCard('$250','Sofa Couch','Ibadan, NG','🛋️')}
-        ${demoCard('$380','PlayStation 5','Lagos, NG','🎮')}
-        ${demoCard('$42','Backpack','Kano, NG','🎒')}
-      `;
-    } else {
-      container.innerHTML = data.map(p => demoCard('$'+p.price, p.name, p.location||'Lagos, NG', '📦')).join('');
-    }
-  }catch(e){ console.log(e); }
+    allProducts = await res.json();
+    if(!allProducts || allProducts.length===0) throw 'empty';
+  }catch(e){
+    // Fallback demo products so you see the BEAUTIFUL design immediately
+    allProducts = [
+      {title:"Vintage Film Camera - Canon AE-1",price:45,image:"https://images.unsplash.com/photo-1452780212940-6f5c84d7fa94?w=400",category:"Electronics",location:"San Francisco, CA",time:"2h ago"},
+      {title:"Nike Air Max 270 - Size 10",price:72,image:"https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400",category:"Fashion",location:"New York, NY",time:"5h ago"},
+      {title:"Ceramic Plant Pot with Succulent",price:18,image:"https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=400",category:"Home",location:"Austin, TX",time:"1h ago"},
+      {title:"Wireless Bluetooth Headphones",price:29,image:"https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400",category:"Electronics",location:"Chicago, IL",time:"30m ago"},
+      {title:"Apple Watch Series 9 - 45mm",price:120,image:"https://images.unsplash.com/photo-1579811216946-46d31b0d581f?w=400",category:"Electronics",location:"Los Angeles, CA",time:"4h ago"},
+      {title:"Modern Grey Sectional Couch",price:250,image:"https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400",category:"Home",location:"Miami, FL",time:"1d ago"},
+      {title:"PlayStation 5 - Disc Edition",price:380,image:"https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=400",category:"Electronics",location:"Seattle, WA",time:"6h ago"},
+      {title:"Leather Backpack - Waterproof",price:42,image:"https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400",category:"Fashion",location:"Denver, CO",time:"3h ago"},
+    ];
+  }
+  render(allProducts);
 }
-function demoCard(price,title,loc,emoji){
-  return `<div class="bg-white rounded-2xl shadow hover:shadow-xl transition p-3 cursor-pointer">
-    <div class="bg-gray-100 rounded-xl h-40 flex items-center justify-center text-6xl relative">
-      ${emoji}
-      <span class="absolute top-2 right-2 bg-white rounded-full p-2 shadow">♡</span>
-      <span class="absolute bottom-2 left-2 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-bold">${price}</span>
-    </div>
-    <h3 class="font-semibold mt-3 truncate">${title}</h3>
-    <p class="text-gray-500 text-sm">📍 ${loc} • 2h ago</p>
-  </div>`;
+function render(list){
+  const html = list.map(p=>`
+    <div class="bg-white rounded-xl overflow-hidden shadow-sm border hover:shadow-md transition">
+      <div class="relative">
+        <img src="${p.image}" class="w-full h-[180px] object-cover">
+        <button class="absolute top-2 right-2 bg-white rounded-full w-7 h-7 flex items-center justify-center shadow">♡</button>
+        <span class="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">$${p.price}</span>
+      </div>
+      <div class="p-2.5">
+        <div class="text-[13px] font-medium leading-tight line-clamp-2 h-9">${p.title}</div>
+        <div class="text-[11px] text-gray-500 mt-1">${p.location||'USA'} • ${p.time||'now'}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('trending').innerHTML = html.slice(0,4);
+  document.getElementById('foryou').innerHTML = html.slice(4);
 }
-function search(){ alert('Searching: '+document.getElementById('search').value); }
+function doSearch(){
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  render(allProducts.filter(p=>p.title.toLowerCase().includes(q)));
+}
+document.querySelectorAll('.cat-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.cat-btn').forEach(x=>x.className='cat-btn bg-white px-4 py-1.5 rounded-full border');
+  b.className='cat-btn bg-[#0064D2] text-white px-4 py-1.5 rounded-full';
+  const cat = b.dataset.cat;
+  if(cat==='All') render(allProducts);
+  else render(allProducts.filter(p=>p.category===cat));
+}));
 loadProducts();
 </script>
 </body>
