@@ -924,4 +924,7 @@ async function boot() {
   }
 }
 
-boot();
+if (require.main === module) {
+  boot();
+}
+module.exports = app;
