@@ -1,13 +1,14 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose'
 
-const orderSchema = new mongoose.Schema({
-  buyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  products: [{
-    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
-    quantity: { type: Number, default: 1 }
-  }],
-  totalAmount: { type: Number, required: true },
-  status: { type: String, enum: ['pending', 'paid', 'shipped'], default: 'pending' }
-}, { timestamps: true });
+const OrderSchema = new mongoose.Schema({
+  email: String,
+  phone: String,
+  shippingAddress: String,
+  products: Array,
+  subtotal: Number,
+  status: { type: String, default: 'pending_seller_contact' },
+  sellerId: String,
+  createdAt: { type: Date, default: Date.now }
+}, { strict: false })
 
-module.exports = mongoose.model('Order', orderSchema);
+export default mongoose.models.Order || mongoose.model('Order', OrderSchema)
