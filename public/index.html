@@ -3,108 +3,133 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ShopHere - Marketplace</title>
+<title>ShopHere - Buy, Sell, Message</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>body{font-family:'Inter',sans-serif;background:#f7f7f7}</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{font-family:'Inter',sans-serif;background:#f3f4f6}.scroll-hide::-webkit-scrollbar{display:none}</style>
 </head>
-<body>
-<!-- HEADER - eBay Blue -->
-<header class="bg-[#0064D2] sticky top-0 z-50">
-  <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-6">
-    <div class="flex items-center gap-2 text-white font-bold text-[22px]"><span class="bg-white text-[#0064D2] w-8 h-8 rounded flex items-center justify-center">🛍️</span> ShopHere</div>
-    <nav class="hidden md:flex gap-5 text-white text-sm font-medium"><span>Shop</span><span>Sell</span><span>Categories ▾</span></nav>
+<body class="pb-20">
+
+<header class="bg-[#0064D2] sticky top-0 z-40 shadow">
+  <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-4">
+    <div class="text-white font-extrabold text-[22px] flex items-center gap-2"><span class="bg-white text-[#0064D2] w-8 h-8 rounded-lg flex items-center justify-center text-sm">🛍️</span> ShopHere</div>
+    <nav class="hidden md:flex gap-6 text-white/90 text-sm font-medium"><span class="font-bold text-white">Shop</span><button onclick="openSell()" class="hover:text-white">Sell</button><span>Categories ▾</span></nav>
     <div class="flex-1"></div>
-    <div class="flex gap-4 text-white text-xl"><span>💬</span><span>♡</span><span>🔔</span><span>🛒</span></div>
+    <div class="flex items-center gap-3 text-white">
+      <button onclick="toggleChat()" class="relative p-2 hover:bg-white/10 rounded-full">💬<span id="msgBadge" class="absolute -top-1 -right-1 bg-red-500 text-[10px] w-5 h-5 rounded-full flex items-center justify-center">2</span></button>
+      <button onclick="openCart()" class="relative p-2 hover:bg-white/10 rounded-full">🛒<span id="cartBadge" class="hidden absolute -top-1 -right-1 bg-yellow-400 text-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center">0</span></button>
+      <button onclick="openSell()" class="hidden md:block bg-white text-[#0064D2] px-5 py-2 rounded-full font-bold text-sm">+ Sell</button>
+    </div>
+  </div>
+  <div class="bg-[#0052b3] md:bg-[#0064D2] pb-4 pt-1">
+    <div class="max-w-[1400px] mx-auto px-4">
+      <div class="bg-white rounded-full flex items-center p-1.5 shadow-lg">
+        <span class="pl-4 text-gray-400">🔍</span>
+        <input id="searchInput" class="flex-1 px-3 py-2 outline-none text-[14px]" placeholder="Search sneakers, sofa, iPhone...">
+        <button onclick="doSearch()" class="bg-[#0064D2] text-white px-6 py-2.5 rounded-full font-semibold text-sm">Search</button>
+      </div>
+    </div>
   </div>
 </header>
 
-<!-- SEARCH -->
-<div class="bg-[#0064D2] pb-6 pt-2">
-  <div class="max-w-[1400px] mx-auto px-4">
-    <div class="bg-white rounded-full flex items-center p-1.5 shadow-lg">
-      <span class="pl-4 text-gray-400">🔍</span>
-      <input id="searchInput" class="flex-1 px-3 py-2 outline-none text-[15px]" placeholder="Search for anything — sneakers, furniture, electronics, collectibles...">
-      <button onclick="doSearch()" class="bg-[#0064D2] text-white px-7 py-2.5 rounded-full font-semibold text-sm">Search</button>
+<div class="max-w-[1400px] mx-auto px-4 py-4">
+  <div class="flex gap-2 overflow-x-auto scroll-hide pb-3 text-[13px] font-medium">
+    <button class="cat bg-[#0064D2] text-white px-4 py-1.5 rounded-full shrink-0" data-cat="All">All</button>
+    <button class="cat bg-white px-4 py-1.5 rounded-full border shrink-0" data-cat="Electronics">Electronics</button>
+    <button class="cat bg-white px-4 py-1.5 rounded-full border shrink-0" data-cat="Fashion">Fashion</button>
+    <button class="cat bg-white px-4 py-1.5 rounded-full border shrink-0" data-cat="Home">Home</button>
+    <button class="cat bg-white px-4 py-1.5 rounded-full border shrink-0" data-cat="Motors">Motors</button>
+  </div>
+  <div class="flex items-center justify-between mt-4 mb-3"><h2 class="font-bold text-lg">Trending Now</h2><span class="text-xs text-gray-500">Buyer Protection • Free returns</span></div>
+  <div id="grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+</div>
+
+<!-- PRODUCT DETAIL MODAL - VALUE -->
+<div id="detailModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end md:items-center justify-center p-0 md:p-6">
+  <div class="bg-white w-full md:max-w-[950px] rounded-t-[20px] md:rounded-2xl overflow-hidden max-h-[92vh] flex flex-col md:flex-row">
+    <div class="md:w-[55%] bg-black relative">
+      <img id="dImg" class="w-full h-[320px] md:h-[560px] object-contain">
+      <button onclick="closeDetail()" class="absolute top-4 left-4 bg-white rounded-full w-9 h-9">✕</button>
+      <div class="absolute bottom-4 left-4 bg-black/70 text-white text-xs px-2 py-1 rounded">1/1 • Protected by ShopHere</div>
+    </div>
+    <div class="flex-1 p-5 overflow-y-auto">
+      <div class="flex justify-between items-start">
+        <div><h2 id="dTitle" class="font-bold text-[19px] leading-tight"></h2><p id="dLocation" class="text-xs text-gray-500 mt-1"></p></div>
+        <button class="text-xl">♡</button>
+      </div>
+      <div id="dPrice" class="text-[28px] font-extrabold mt-3"></div>
+      <div class="flex gap-2 mt-3"><span class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full">✓ Buyer Protection</span><span class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">🚚 Shipping + Local Pickup</span></div>
+
+      <div class="mt-5 p-3 bg-gray-50 rounded-xl flex gap-3 items-center">
+        <div class="w-10 h-10 bg-[#0064D2] text-white rounded-full flex items-center justify-center font-bold">S</div>
+        <div class="flex-1"><div class="font-semibold text-sm">Seller • Verified <span class="text-green-600">★4.9</span></div><div class="text-xs text-gray-500">Typically replies in 5 min • 124 sold</div></div>
+        <button onclick="messageSeller()" class="text-[#0064D2] font-bold text-sm border border-[#0064D2] px-4 py-1.5 rounded-full">Message</button>
+      </div>
+
+      <p class="text-sm text-gray-600 mt-4">Excellent condition. No issues. Comes with box and charger. Buyer protection included - money back if not as described.</p>
+
+      <div class="grid grid-cols-2 gap-3 mt-6">
+        <button onclick="openOffer()" class="border-2 border-[#0064D2] text-[#0064D2] py-3 rounded-full font-bold">Make Offer</button>
+        <button onclick="buyNow()" class="bg-[#0064D2] text-white py-3 rounded-full font-bold">Buy Now</button>
+      </div>
+      <button onclick="messageSeller()" class="w-full mt-3 bg-black text-white py-3 rounded-full font-bold flex items-center justify-center gap-2">💬 Ask • Message Seller</button>
+      <div class="text-[11px] text-center text-gray-400 mt-3">Secure checkout • Chat directly with seller • No fees for buyers</div>
     </div>
   </div>
 </div>
 
-<div class="max-w-[1400px] mx-auto px-4 py-4">
-  <!-- CATEGORIES -->
-  <div class="flex gap-2 overflow-x-auto pb-3 text-sm whitespace-nowrap">
-    <button class="cat-btn bg-[#0064D2] text-white px-4 py-1.5 rounded-full" data-cat="All">All Categories</button>
-    <button class="cat-btn bg-white px-4 py-1.5 rounded-full border" data-cat="Electronics">📱 Electronics</button>
-    <button class="cat-btn bg-white px-4 py-1.5 rounded-full border" data-cat="Fashion">👕 Fashion</button>
-    <button class="cat-btn bg-white px-4 py-1.5 rounded-full border" data-cat="Home">🏠 Home & Garden</button>
-    <button class="cat-btn bg-white px-4 py-1.5 rounded-full border" data-cat="Motors">🚗 Motors</button>
-    <button class="cat-btn bg-white px-4 py-1.5 rounded-full border" data-cat="Collectibles">⭐ Collectibles</button>
+<!-- CHAT DRAWER - VALUE -->
+<div id="chatDrawer" class="hidden fixed inset-0 z-[60] flex justify-end">
+  <div onclick="toggleChat()" class="flex-1 bg-black/30"></div>
+  <div class="w-full md:w-[380px] bg-white h-full flex flex-col shadow-2xl">
+    <div class="p-4 border-b flex justify-between items-center"><div><div class="font-bold">Messages</div><div class="text-xs text-gray-500">Chat directly with buyers/sellers</div></div><button onclick="toggleChat()" class="w-8 h-8 bg-gray-100 rounded-full">✕</button></div>
+    <div id="chatList" class="flex-1 overflow-y-auto p-2 space-y-1">
+      <div class="p-3 bg-blue-50 rounded-xl border border-blue-100"><div class="font-semibold text-sm">Nike Air Max Seller</div><div class="text-xs text-gray-600">Hi! Yes it's available. Can meet today?</div><div class="text-[10px] text-blue-600 mt-1">• About Nike Air Max 270</div></div>
+      <div class="p-3 hover:bg-gray-50 rounded-xl"><div class="font-semibold text-sm">Camera Shop • Verified</div><div class="text-xs text-gray-600">Offer accepted for $40!</div></div>
+    </div>
+    <div id="chatThread" class="hidden flex-1 flex flex-col"><div class="p-3 border-b text-sm font-semibold">← Back to chats</div><div class="flex-1 p-3 space-y-2 overflow-y-auto" id="chatMessages"><div class="bg-gray-100 p-2.5 rounded-2xl rounded-bl-none text-sm max-w-[80%]">Is this still available?</div><div class="bg-[#0064D2] text-white p-2.5 rounded-2xl rounded-br-none text-sm max-w-[80%] ml-auto">Yes! You want to pick up or ship?</div></div><div class="p-3 border-t flex gap-2"><input id="chatInput" class="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm outline-none" placeholder="Type a message..."><button onclick="sendMsg()" class="bg-[#0064D2] text-white w-10 h-10 rounded-full">➤</button></div></div>
+    <div class="p-3 border-t"><div class="flex gap-2"><input id="mainChatInput" class="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm outline-none" placeholder="Message seller..."><button onclick="sendMsg()" class="bg-black text-white px-5 rounded-full text-sm font-bold">Send</button></div></div>
   </div>
-
-  <!-- TRENDING -->
-  <div class="flex items-center justify-between mt-6 mb-3">
-    <h2 class="font-bold text-[18px]">Trending Now <span class="text-[#0064D2] text-sm font-normal ml-2 cursor-pointer">See all ›</span></h2>
-  </div>
-  <div id="trending" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-    <!-- Products injected here -->
-  </div>
-
-  <div class="flex items-center justify-between mt-8 mb-3">
-    <h2 class="font-bold text-[18px]">Just For You <span class="text-[#0064D2] text-sm font-normal ml-2">See all ›</span></h2>
-  </div>
-  <div id="foryou" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
 </div>
 
+<!-- BUY / OFFER MODALS -->
+<div id="offerModal" class="hidden fixed inset-0 z-[70] bg-black/60 flex items-center justify-center p-4"><div class="bg-white rounded-2xl w-full max-w-[380px] p-6"><h3 class="font-bold text-lg">Make an Offer</h3><p class="text-sm text-gray-500 mt-1">Seller can accept, counter, or decline. You can chat after.</p><div class="mt-4"><div class="text-xs font-semibold">Your Offer</div><div class="flex items-center gap-2 mt-2"><span class="text-2xl font-bold">$</span><input id="offerPrice" type="number" class="flex-1 text-2xl font-bold border-b-2 border-black outline-none py-2" placeholder="60"></div></div><div class="flex gap-3 mt-6"><button onclick="closeOffer()" class="flex-1 border py-3 rounded-full font-bold">Cancel</button><button onclick="submitOffer()" class="flex-1 bg-[#0064D2] text-white py-3 rounded-full font-bold">Send Offer</button></div></div></div>
+
+<div id="buyModal" class="hidden fixed inset-0 z-[70] bg-black/60 flex items-center justify-center p-4"><div class="bg-white rounded-2xl w-full max-w-[400px] p-6"><h3 class="font-bold text-lg">Checkout - Protected</h3><div class="mt-4 space-y-3"><input class="w-full border rounded-xl px-4 py-3 text-sm" placeholder="Shipping address"><input class="w-full border rounded-xl px-4 py-3 text-sm" placeholder="Phone for seller to contact"><div class="p-3 bg-green-50 rounded-xl text-xs"><b>🛡️ ShopHere Protection:</b> Money back if item not as described. Chat with seller anytime.</div></div><div class="flex gap-3 mt-6"><button onclick="closeBuy()" class="flex-1 border py-3 rounded-full font-bold">Cancel</button><button onclick="placeOrder()" class="flex-1 bg-black text-white py-3 rounded-full font-bold">Place Order - $<span id="buyPrice">0</span></button></div></div></div>
+
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-black text-white px-6 py-3 rounded-full text-sm font-medium z-[80]"></div>
+
 <script>
-let allProducts = [];
-async function loadProducts(){
-  try{
-    const res = await fetch('/api/products');
-    allProducts = await res.json();
-    if(!allProducts || allProducts.length===0) throw 'empty';
-  }catch(e){
-    // Fallback demo products so you see the BEAUTIFUL design immediately
-    allProducts = [
-      {title:"Vintage Film Camera - Canon AE-1",price:45,image:"https://images.unsplash.com/photo-1452780212940-6f5c84d7fa94?w=400",category:"Electronics",location:"San Francisco, CA",time:"2h ago"},
-      {title:"Nike Air Max 270 - Size 10",price:72,image:"https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400",category:"Fashion",location:"New York, NY",time:"5h ago"},
-      {title:"Ceramic Plant Pot with Succulent",price:18,image:"https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=400",category:"Home",location:"Austin, TX",time:"1h ago"},
-      {title:"Wireless Bluetooth Headphones",price:29,image:"https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400",category:"Electronics",location:"Chicago, IL",time:"30m ago"},
-      {title:"Apple Watch Series 9 - 45mm",price:120,image:"https://images.unsplash.com/photo-1579811216946-46d31b0d581f?w=400",category:"Electronics",location:"Los Angeles, CA",time:"4h ago"},
-      {title:"Modern Grey Sectional Couch",price:250,image:"https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400",category:"Home",location:"Miami, FL",time:"1d ago"},
-      {title:"PlayStation 5 - Disc Edition",price:380,image:"https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=400",category:"Electronics",location:"Seattle, WA",time:"6h ago"},
-      {title:"Leather Backpack - Waterproof",price:42,image:"https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400",category:"Fashion",location:"Denver, CO",time:"3h ago"},
-    ];
-  }
-  render(allProducts);
-}
-function render(list){
-  const html = list.map(p=>`
-    <div class="bg-white rounded-xl overflow-hidden shadow-sm border hover:shadow-md transition">
-      <div class="relative">
-        <img src="${p.image}" class="w-full h-[180px] object-cover">
-        <button class="absolute top-2 right-2 bg-white rounded-full w-7 h-7 flex items-center justify-center shadow">♡</button>
-        <span class="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">$${p.price}</span>
-      </div>
-      <div class="p-2.5">
-        <div class="text-[13px] font-medium leading-tight line-clamp-2 h-9">${p.title}</div>
-        <div class="text-[11px] text-gray-500 mt-1">${p.location||'USA'} • ${p.time||'now'}</div>
-      </div>
-    </div>`).join('');
-  document.getElementById('trending').innerHTML = html.slice(0,4);
-  document.getElementById('foryou').innerHTML = html.slice(4);
-}
-function doSearch(){
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  render(allProducts.filter(p=>p.title.toLowerCase().includes(q)));
-}
-document.querySelectorAll('.cat-btn').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('.cat-btn').forEach(x=>x.className='cat-btn bg-white px-4 py-1.5 rounded-full border');
-  b.className='cat-btn bg-[#0064D2] text-white px-4 py-1.5 rounded-full';
-  const cat = b.dataset.cat;
-  if(cat==='All') render(allProducts);
-  else render(allProducts.filter(p=>p.category===cat));
-}));
-loadProducts();
+let allProducts=[], selected=null;
+async function load(){try{const r=await fetch('/api/products');allProducts=await r.json(); if(!allProducts.length) throw 1}catch{allProducts=[
+{title:"Vintage Film Camera - Canon AE-1",price:45,image:"https://images.unsplash.com/photo-1452780212940-6f5c84d7fa94?w=400",category:"Electronics",location:"San Francisco, CA • 2h ago"},
+{title:"Nike Air Max 270 - Size 10",price:72,image:"https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500",category:"Fashion",location:"New York, NY • 30m ago"},
+{title:"Ceramic Plant Pot with Succulent",price:18,image:"https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=400",category:"Home",location:"Austin, TX • 1h ago"},
+{title:"Wireless Bluetooth Headphones",price:29,image:"https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400",category:"Electronics",location:"Chicago, IL • 10m ago"},
+{title:"Apple Watch Series 9",price:120,image:"https://images.unsplash.com/photo-1579586337278-3befd40fd17b?w=400",category:"Electronics",location:"LA, CA • 4h ago"},
+{title:"Modern Grey Sectional Couch",price:250,image:"https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400",category:"Home",location:"Miami, FL • 1d ago"},
+]} render(allProducts)}
+function render(list){document.getElementById('grid').innerHTML=list.map((p,i)=>`
+<div onclick="openProduct(${i})" class="bg-white rounded-xl overflow-hidden shadow-sm border hover:shadow-lg cursor-pointer group">
+<div class="relative"><img src="${p.image}" class="w-full h-[170px] object-cover group-hover:scale-[1.02] transition"><span class="absolute bottom-2 left-2 bg-black/80 text-white text-[12px] font-bold px-2 py-1 rounded">$${p.price}</span><button class="absolute top-2 right-2 bg-white w-7 h-7 rounded-full shadow">♡</button></div>
+<div class="p-2.5"><div class="text-[13px] font-medium line-clamp-2 leading-tight h-9">${p.title}</div><div class="text-[11px] text-gray-500 mt-1">${p.location||''}</div><div class="flex gap-1 mt-1.5"><span class="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded">💬 Message</span><span class="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Make Offer</span></div></div></div>`).join('')}
+function openProduct(i){selected=allProducts[i]; document.getElementById('dImg').src=selected.image; document.getElementById('dTitle').innerText=selected.title; document.getElementById('dPrice').innerText='$'+selected.price; document.getElementById('dLocation').innerText=selected.location; document.getElementById('buyPrice').innerText=selected.price; document.getElementById('detailModal').classList.remove('hidden')}
+function closeDetail(){document.getElementById('detailModal').classList.add('hidden')}
+function toggleChat(){document.getElementById('chatDrawer').classList.toggle('hidden')}
+function messageSeller(){closeDetail(); toggleChat(); toast('Chat opened with seller!')}
+function openOffer(){document.getElementById('offerModal').classList.remove('hidden')}
+function closeOffer(){document.getElementById('offerModal').classList.add('hidden')}
+function openCart(){toast('Cart: '+ (selected?selected.title:'Empty') + ' - Proceed to Buy Now')}
+function closeBuy(){document.getElementById('buyModal').classList.add('hidden')}
+function buyNow(){document.getElementById('buyModal').classList.remove('hidden')}
+function submitOffer(){const v=document.getElementById('offerPrice').value; closeOffer(); toast('Offer $'+v+' sent! Seller notified - check Messages 💬'); toggleChat()}
+function placeOrder(){closeBuy(); closeDetail(); toast('✅ Order placed! You can now message seller for pickup/shipping'); toggleChat()}
+function sendMsg(){const i=document.getElementById('mainChatInput')||document.getElementById('chatInput'); if(!i.value) return; toast('Message sent!'); i.value=''}
+function toast(t){const el=document.getElementById('toast'); el.innerText=t; el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'),3000)}
+function doSearch(){const q=document.getElementById('searchInput').value.toLowerCase(); render(allProducts.filter(p=>p.title.toLowerCase().includes(q)))}
+function openSell(){const title=prompt('What are you selling? Title:'); if(!title) return; const price=prompt('Price $?'); const img=prompt('Image URL (paste unsplash link) or leave blank for auto:'); const newP={title,price:price||20,image:img||'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400',category:'All',location:'Your Location • now'}; allProducts.unshift(newP); render(allProducts); toast('✅ Listed! Buyers can now message you');}
+document.querySelectorAll('.cat').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.cat').forEach(x=>x.className='cat bg-white px-4 py-1.5 rounded-full border shrink-0'); b.className='cat bg-[#0064D2] text-white px-4 py-1.5 rounded-full shrink-0'; const c=b.dataset.cat; if(c==='All') render(allProducts); else render(allProducts.filter(p=>p.category===c||p.title.toLowerCase().includes(c.toLowerCase())))}))
+load();
 </script>
 </body>
 </html>
